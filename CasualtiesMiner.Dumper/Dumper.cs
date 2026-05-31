@@ -4,12 +4,17 @@ using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Collections.Generic;
 using System.Reflection.Metadata.Ecma335;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace CasualtiesMiner.Dumper;
 
-public class Dumper
+public partial class Dumper
 {
     private readonly ModuleDefinition _module;
+    private Locale _locale = new Locale();
 
     public Dumper(string filePath)
     {
@@ -19,6 +24,41 @@ public class Dumper
     public Dumper(ModuleDefinition module)
     {
         _module = module;
+    }
+    
+    [JsonSerializable(typeof(Locale))]
+    private partial class LocaleContext : JsonSerializerContext { }
+    
+    public async Task FetchEnglishLocaleAsync()
+    {
+        const string tag = "v6.1";
+        const string hash = "3FEC04F51139DF1B9312D8B10AE508E40DF68B2D00CB2BBC96A38DC7A0D62980";
+        const string url = $"https://raw.githubusercontent.com/orsoniks/scavgame-locale/refs/tags/{tag}/EN.json";
+        
+        // ReSharper disable once ShortLivedHttpClient - not used frequently
+        using var httpClient = new HttpClient();
+
+        try
+        {
+            var response = await httpClient.GetAsync(url);
+            var body = await response.Content.ReadAsStringAsync();
+            
+            var responseHash = SHA256.HashData(Encoding.UTF8.GetBytes(body));
+            var expectedHash = Convert.FromHexString(hash);
+
+            if (!responseHash.SequenceEqual(expectedHash))
+                throw new InvalidOperationException($"Hash integrity check failed for English locale.");
+
+            _locale =
+                JsonSerializer.Deserialize(body, LocaleContext.Default.Locale)
+                ?? throw new InvalidOperationException($"Deserializer returned null for English locale.");
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine("Failed to retrieve translation files from the main repository.");
+            Console.WriteLine($"Exception: {e}");
+            _locale = new Locale();
+        }
     }
 
     public ItemInfo[] DumpItems(CSharpDecompiler decompiler)
@@ -88,7 +128,8 @@ public class Dumper
                 item = new ItemInfo();
 
             // 2. Map all the common base properties exactly once
-            item.fullName = itemName;
+            item.fullName = _locale.Main.GetValueOrDefault(itemName, itemName);
+            item.description = _locale.Main.GetValueOrDefault(itemName + "dsc", itemName + "dsc");
             item.category = GetValue<string>(itemDict, "category");
             item.slotRotation = GetValue<float>(itemDict, "slotRotation");
             item.usable = GetValue<bool>(itemDict, "usable");

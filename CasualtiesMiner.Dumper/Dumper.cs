@@ -14,7 +14,7 @@ namespace CasualtiesMiner.Dumper;
 public partial class Dumper
 {
     private readonly ModuleDefinition _module;
-    private Locale _locale = new Locale();
+    private Language _language = new Language();
 
     public Dumper(string filePath)
     {
@@ -25,9 +25,15 @@ public partial class Dumper
     {
         _module = module;
     }
-    
-    [JsonSerializable(typeof(Locale))]
-    private partial class LocaleContext : JsonSerializerContext { }
+
+    [JsonSerializable(typeof(Language))]
+    private partial class LocaleContext : JsonSerializerContext
+    {
+        public static LocaleContext Repo { get; } = new LocaleContext(new JsonSerializerOptions()
+        {
+            IncludeFields = true
+        });
+    }
     
     public async Task FetchEnglishLocaleAsync()
     {
@@ -49,15 +55,15 @@ public partial class Dumper
             if (!responseHash.SequenceEqual(expectedHash))
                 throw new InvalidOperationException($"Hash integrity check failed for English locale.");
 
-            _locale =
-                JsonSerializer.Deserialize(body, LocaleContext.Default.Locale)
+            _language =
+                JsonSerializer.Deserialize(body, LocaleContext.Repo.Language)
                 ?? throw new InvalidOperationException($"Deserializer returned null for English locale.");
         }
         catch (Exception e)
         {
             Console.WriteLine("Failed to retrieve translation files from the main repository.");
             Console.WriteLine($"Exception: {e}");
-            _locale = new Locale();
+            _language = new Language();
         }
     }
 
@@ -128,8 +134,8 @@ public partial class Dumper
                 item = new ItemInfo();
 
             // 2. Map all the common base properties exactly once
-            item.fullName = _locale.Main.GetValueOrDefault(itemName, itemName);
-            item.description = _locale.Main.GetValueOrDefault(itemName + "dsc", itemName + "dsc");
+            item.fullName = _language.main?.GetValueOrDefault(itemName, itemName) ?? itemName;
+            item.description = _language.main?.GetValueOrDefault(itemName + "dsc", itemName + "dsc") ?? itemName + "dsc";
             item.category = GetValue<string>(itemDict, "category");
             item.slotRotation = GetValue<float>(itemDict, "slotRotation");
             item.usable = GetValue<bool>(itemDict, "usable");

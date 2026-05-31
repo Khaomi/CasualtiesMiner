@@ -27,7 +27,8 @@ public sealed class ModelGenerator : IIncrementalGenerator
         "BatteryInfo",
         "Color",
         "Recognition",
-        "SleepQuality"
+        "SleepQuality",
+        "Language"
     };
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
@@ -88,7 +89,7 @@ public sealed class ModelGenerator : IIncrementalGenerator
     {
         foreach (var name in Models)
         {
-            if (typeName.IndexOf(name, StringComparison.Ordinal) >= 0)
+            if (typeName.Equals(name, StringComparison.Ordinal))
             {
                 return true;
             }

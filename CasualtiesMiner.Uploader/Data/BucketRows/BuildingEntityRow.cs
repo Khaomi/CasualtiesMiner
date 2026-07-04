@@ -1,4 +1,4 @@
-﻿namespace CasualtiesMiner.Uploader.Data;
+﻿namespace CasualtiesMiner.Uploader.Data.BucketRows;
 
 /// <summary>
 /// A flattened, wiki-ready representation of a building entity. All values are already converted to the

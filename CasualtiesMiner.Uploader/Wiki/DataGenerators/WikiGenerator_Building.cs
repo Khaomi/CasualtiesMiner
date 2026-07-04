@@ -1,5 +1,6 @@
 ﻿using CasualtiesMiner.Uploader.Data;
 using System.Text;
+using CasualtiesMiner.Uploader.Data.BucketRows;
 
 namespace CasualtiesMiner.Uploader.Wiki;
 

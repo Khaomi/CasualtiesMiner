@@ -30,7 +30,9 @@ public sealed class ModelGenerator : IIncrementalGenerator
         "Color",
         "Recognition",
         "SleepQuality",
-        "Language"
+        "Language",
+        "BuildingEntity",
+        "ItemDrop"
     };
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
@@ -160,9 +162,26 @@ public sealed class ModelGenerator : IIncrementalGenerator
 
     private static IEnumerable<IFieldSymbol> GetFields(INamedTypeSymbol type)
     {
+        bool ShouldKeepType(ITypeSymbol type)
+        {
+            var name = type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+            
+            if (name.StartsWith("global::UnityEngine"))
+            {
+                return name switch
+                {
+                    "global::UnityEngine.Color" => true,
+                    _ => false
+                };
+            }
+
+            return true;
+        }
+        
         return type.GetMembers()
             .OfType<IFieldSymbol>()
             .Where(f => !f.IsStatic && !f.IsImplicitlyDeclared)
+            .Where(f => ShouldKeepType(f.Type))
             .Where(f => f.DeclaredAccessibility == Accessibility.Public || IsStringArray(f.Type));
     }
 

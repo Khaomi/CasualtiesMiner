@@ -71,6 +71,11 @@ internal static class LocaleWikiGenerator
                 name = locale.GetMoodles(id, $"{id}:TEMP_SMTH_IS_WRONG");
                 description = locale.GetMoodlesDesc(id, $"{id}:TEMP_SMTH_IS_WRONG");
             }
+            if (type == "buildings")
+            {
+                name = locale.GetBuildings(id, $"{id}:TEMP_SMTH_IS_WRONG");
+                description = locale.GetBuildingsDesc(id, $"{id}:TEMP_SMTH_IS_WRONG");
+            }
 
             sb.Append("  [").Append(LuaFormat.String(id)).Append("] = { ");
             sb.Append("name = ").Append(LuaFormat.String(name)).Append(", ");

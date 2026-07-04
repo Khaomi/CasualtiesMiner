@@ -7,6 +7,8 @@ namespace CasualtiesMiner.Uploader;
 
 public static class Program
 {
+    public static readonly string DryRunFolder = Path.Combine("dry-run-output");
+    
     public static async Task<int> Main(string[] args)
     {
         if (args.Length == 0 || args[0] is "-h" or "--help" or "help")
@@ -33,6 +35,7 @@ public static class Program
         var recipeResultRows = LoadRecipeResultRows(options);
         var recipeRows = LoadRecipeRows(options);
         var gameFieldRows = LoadGameFields(options);
+        var buildingEntityRows = LoadBuildingEntityRows(options);
         var bodyFieldRows = BodyFieldRowMapper.Map();
         var locales = await LoadLocalesAsync(options);
 
@@ -58,6 +61,10 @@ public static class Program
         }
         else
         {
+            if (Directory.Exists(DryRunFolder))
+                Directory.Delete(DryRunFolder, true);
+            Directory.CreateDirectory(DryRunFolder);
+            
             Console.WriteLine("Dry run: no edits will be performed.");
         }
 
@@ -73,6 +80,7 @@ public static class Program
                 itemRows,
                 liquidRows,
                 moodleRows,
+                buildingEntityRows,
                 options);
         }
 
@@ -88,6 +96,7 @@ public static class Program
                 moodleRows,
                 gameFieldRows,
                 bodyFieldRows,
+                buildingEntityRows,
                 options);
         }
 
@@ -113,6 +122,7 @@ public static class Program
         IReadOnlyList<ItemRow> itemRows,
         IReadOnlyList<LiquidRow> liquidRows,
         IReadOnlyList<MoodleRow> moodleRows,
+        IReadOnlyList<BuildingEntityRow> buildingRows,
         CliOptions options)
     {
         Console.WriteLine("== Uploading locale modules ==");
@@ -140,6 +150,7 @@ public static class Program
         var itemIds = itemRows.Select(r => r.ItemId).ToArray();
         var moodleItems = moodleRows.Select(r => r.LocaleId).ToArray();
         //var liquidsItems = liquidRows.Select(r => r.LocaleName).ToArray();
+        var buildingItems = buildingRows.Select(r => r.Id).ToArray();
 
         foreach (var locale in locales.Locales)
         {
@@ -169,6 +180,15 @@ public static class Program
                 $"Update {locale.Code} moodle strings",
                 options.DryRun);
             Console.WriteLine($"  {moodlesTitle}: {moodlesStatus}");
+
+            var buildingsTitle = LocaleWikiGenerator.ModuleTitle(locale.Code, "buildings");
+
+            var buildingsStatus = await client.EditAsync(
+                buildingsTitle,
+                LocaleWikiGenerator.BuildObjectsLocaleModule(locale, buildingItems, "buildings"),
+                $"Update {locale.Code} building strings",
+                options.DryRun);
+            Console.WriteLine($"  {buildingsTitle}: {buildingsStatus}");
 
             var uiTitle = LocaleWikiGenerator.ModuleTitle(locale.Code, "ui");
 
@@ -212,6 +232,13 @@ public static class Program
             "Update MoodleBucket reader",
             options.DryRun);
         Console.WriteLine($"  {WikiContent.MoodleBucketModuleTitle}: {bucketMoodleModule}");
+
+        var bucketBuildingModule = await client.EditAsync(
+            WikiContent.BuildingBucketModuleTitle,
+            WikiContent.BuildingBucketModule,
+            "Update BuildingBucket reader",
+            options.DryRun);
+        Console.WriteLine($"  {WikiContent.BuildingBucketModuleTitle}: {bucketBuildingModule}");
     }
 
     private static async Task UploadBulkAsync(
@@ -224,6 +251,7 @@ public static class Program
         IReadOnlyList<MoodleRow> moodleRows,
         IReadOnlyList<GameFieldRow> gameFieldRows,
         BodyFieldRow[] bodyFieldRows,
+        IReadOnlyList<BuildingEntityRow> buildingRows,
         CliOptions options)
     {
         Console.WriteLine("== Uploading bulk Bucket data ==");
@@ -272,7 +300,22 @@ public static class Program
             "Regenerate moodle data",
             options.DryRun);
         Console.WriteLine($"  {WikiContent.MoodleDataModuleTitle}: {data}");
-
+        
+        Console.WriteLine("== Buildings ==");
+        router = await client.EditAsync(
+            WikiContent.RouterBuildingModuleTitle,
+            WikiContent.RouterBuildingModule,
+            "Update building data router",
+            options.DryRun);
+        Console.WriteLine($"  {WikiContent.RouterBuildingModuleTitle}: {router}");
+        
+        data = await client.EditAsync(
+            WikiContent.BuildingDataModuleTitle,
+            WikiGenerator.BuildBuildingDataModule(buildingRows),
+            "Regenerate building data",
+            options.DryRun);
+        Console.WriteLine($"  {WikiContent.BuildingDataModuleTitle}: {data}");
+        
         Console.WriteLine("== Recipes ==");
         router = await client.EditAsync(
             WikiContent.RouterRecipeItemModuleTitle,
@@ -389,6 +432,13 @@ public static class Program
             options.DryRun);
         Console.WriteLine($"  {WikiContent.TriggerMoodlePageTitle}: {moodleTrigger}");
 
+        var buildingTrigger = await client.EditAsync(
+            WikiContent.TriggerBuildingPageTitle,
+            WikiContent.TriggerBuildingPage,
+            "Refresh Bucket building data",
+            options.DryRun);
+        Console.WriteLine($"  {WikiContent.TriggerBuildingPageTitle}: {buildingTrigger}");
+
         var gameFieldTrigger = await client.EditAsync(
             WikiContent.TriggerGameFieldPageTitle,
             WikiContent.TriggerGameFieldPage,
@@ -475,6 +525,17 @@ public static class Program
         var gameFields = DataJson.LoadFields(options.DataPath);
 
         return GameFieldRowMapper.Map(gameFields);
+    }
+
+    private static IReadOnlyList<BuildingEntityRow> LoadBuildingEntityRows(CliOptions options)
+    {
+        var buildings = DataJson.LoadBuildings(options.DataPath);
+
+        return buildings
+            .Where(m => !string.IsNullOrWhiteSpace(m.id))
+            .Select(BuildingEntityRowMapper.Map)
+            .OrderBy(row => row.Id, StringComparer.Ordinal)
+            .ToList();
     }
 
     private static async Task<LocaleCatalog> LoadLocalesAsync(CliOptions options)

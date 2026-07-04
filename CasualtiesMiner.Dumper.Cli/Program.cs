@@ -3,6 +3,7 @@ using ICSharpCode.Decompiler;
 using ICSharpCode.Decompiler.CSharp;
 using Mono.Cecil;
 using System.Text.Json;
+using CasualtiesMiner.Dumper.Game;
 
 namespace CasualtiesMiner.Dumper.Cli;
 
@@ -48,7 +49,13 @@ public class Program
         BlockInfo[] tiles = [];
         MoodleInfo[] moodles = [];
         GameFields? fields = null;
+        BuildingEntity[] buildings = [];
 
+        using var assets = new AssetsParser(Path.GetDirectoryName(Path.GetDirectoryName(assemblyPath))!);
+
+        // TODO: AssetsTools.NET thread safety?
+        buildings = dumper.DumpBuildingEntities(assets);
+        
         await Task.WhenAll(
             Task.Run(() => fields = dumper.DumpGameFields()),
             Task.Run(() => items = dumper.DumpItems(new CSharpDecompiler(assemblyPath, decompilerSettings))),
@@ -63,6 +70,7 @@ public class Program
         Console.WriteLine($"Dumped {liquids.Length} liquids.");
         Console.WriteLine($"Dumped {tiles.Length} tiles.");
         Console.WriteLine($"Dumped {moodles.Length} moodles.");
+        Console.WriteLine($"Dumped {buildings.Length} buildings.");
 
         if (fields is not null)
         {
@@ -84,6 +92,7 @@ public class Program
             Tiles = tiles,
             Moodles = moodles,
             Fields = fields ?? new GameFields(),
+            Buildings = buildings,
         };
 
         await File.WriteAllTextAsync("data.json",

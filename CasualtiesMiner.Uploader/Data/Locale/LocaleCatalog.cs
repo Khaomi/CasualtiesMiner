@@ -230,6 +230,7 @@ internal sealed class LocaleCatalog
         var main = ReadStringDictionary(document.RootElement, "main");
         var other = ReadStringDictionary(document.RootElement, "other");
         var moodles = ReadStringDictionary(document.RootElement, "moodles");
+        var buildings = ReadStringDictionary(document.RootElement, "buildings");
 
         return new GameLocale
         {
@@ -237,7 +238,8 @@ internal sealed class LocaleCatalog
             FileName = fileName,
             Main = main,
             Other = other,
-            Moodles = moodles
+            Moodles = moodles,
+            Buildings = buildings,
         };
     }
 

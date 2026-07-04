@@ -72,4 +72,14 @@ internal static class DataJson
 
         return moodlesElement.Deserialize<GameFields>(ReadOptions) ?? null;
     }
+
+    internal static BuildingEntity[] LoadBuildings(string path)
+    {
+        using var document = JsonDocument.Parse(File.ReadAllText(path));
+
+        if (!document.RootElement.TryGetProperty("buildings", out var buildingsElement))
+            return [];
+
+        return buildingsElement.Deserialize<BuildingEntity[]>(ReadOptions) ?? [];
+    }
 }

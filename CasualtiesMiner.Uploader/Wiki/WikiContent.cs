@@ -15,6 +15,7 @@ internal static class WikiContent
     public const string RouterRecipeItemModuleTitle = "Module:RecipeItemData";
     public const string RouterRecipeResultModuleTitle = "Module:RecipeResultData";
     public const string RouterMoodleModuleTitle = "Module:MoodleData";
+    public const string RouterBuildingModuleTitle = "Module:BuildingData";
     public const string RouterGameFieldModuleTitle = "Module:GameFieldData";
     public const string RouterBodyFieldModuleTitle = "Module:BodyFieldData";
 
@@ -22,6 +23,7 @@ internal static class WikiContent
     public const string LiquidBucketModuleTitle = "Module:LiquidBucket";
     public const string RecipeBucketModuleTitle = "Module:RecipeBucket";
     public const string MoodleBucketModuleTitle = "Module:MoodleBucket";
+    public const string BuildingBucketModuleTitle = "Module:BuildingBucket";
 
     public const string ItemDataModuleTitle = "Module:Item/data";
     public const string LiquidDataModuleTitle = "Module:Liquid/data";
@@ -31,6 +33,7 @@ internal static class WikiContent
     public const string MoodleDataModuleTitle = "Module:Moodle/data";
     public const string GameFieldDataModuleTitle = "Module:GameField/data";
     public const string BodyFieldDataModuleTitle = "Module:BodyField/data";
+    public const string BuildingDataModuleTitle = "Module:Building/data";
 
     public const string TriggerItemPageTitle = "Project:Items data";
     public const string TriggerLiquidPageTitle = "Project:Liquid data";
@@ -40,6 +43,7 @@ internal static class WikiContent
     public const string TriggerMoodlePageTitle = "Project:Moodle data";
     public const string TriggerGameFieldPageTitle = "Project:GameField data";
     public const string TriggerBodyFieldPageTitle = "Project:BodyField data";
+    public const string TriggerBuildingPageTitle = "Project:Building data";
 
     #region Locale
 
@@ -112,7 +116,23 @@ internal static class WikiContent
             if res ~= nil then return res end
         
             for id, liquid in pairs(tbl) do
-                if liquid.name == liquidId or string.lower(liquid.name) == liquidIdLc then return item end
+                if liquid.name == liquidId or string.lower(liquid.name) == liquidIdLc then return liquid end
+            end
+        end
+        
+        ---Query building locale information in specified language.
+        ---@param buildingId string Building ID or display name. Case insensitive.
+        ---@param lang any Target language. For example: EN
+        ---@return table Building language table entry.
+        function p.getBuilding(buildingId, lang)
+            if not buildingId or buildingId == "" then return nil end
+            local tbl = loadTable(lang, "buildings")
+            local buildingIdLc = string.lower(buildingId)
+            local res = tbl[buildingId] or tbl[buildingIdLc]
+            if res ~= nil then return res end
+        
+            for id, building in pairs(tbl) do
+                if building.name == buildingId or string.lower(building.name) == buildingIdLc then return building end
             end
         end
 
@@ -128,7 +148,7 @@ internal static class WikiContent
             if res ~= nil then return res end
         
             for id, moodle in pairs(tbl) do
-                if moodle.locale_id == moodleId or string.lower(moodle.locale_id) == moodleIdLc then return item end
+                if moodle.locale_id == moodleId or string.lower(moodle.locale_id) == moodleIdLc then return moodle end
             end
         end
 
@@ -1751,6 +1771,153 @@ internal static class WikiContent
 
     #endregion Moodles
 
+    #region Buildings
+    
+    // TODO: Actually fill this with stuff
+    public const string BuildingBucketModule =
+        """
+        local Locale = require("Module:Locale")
+        local getArgs = require("Module:Arguments").getArgs
+        local yesNo = require("Module:Yesno")
+
+        local p = {}
+
+        local function firstRow(result)
+            return result and result[1] or nil
+        end
+
+        local function paramValue(v)
+            if v == nil then return "" end
+            if type(v) == "boolean" then
+                return yesNo(v) and "true" or "false"
+            end
+            if type(v) == "table" then
+                return table.concat(v, ", ")
+            end
+            return tostring(v)
+        end
+
+        function p.fetch(buildingId)
+            return firstRow(bucket("building")
+                .select("building_id", "items_drop_on_destroy", "health", "require_ground",
+                        "skip_description_set", "drop_chance_multiplier", "guaranteed_drop_amount",
+                        "always_drop", "item_categories_to_add", "block_footstep_sound_id",
+                        "cant_hit", "animal", "ignore_body_optimize", "metallic")
+                .where("building_id", buildingId)
+                .run())
+        end
+
+        -- =================================================
+        function p.infobox(frame)
+            local args = getArgs(frame)
+
+            local buildingId = args.building_id or args[1] or args["1"]
+            buildingId = buildingId and mw.text.trim(tostring(buildingId)) or ""
+            if buildingId == "" then
+                return "[[Category:Errors]]<strong>BuildingBucket:</strong> missing building id."
+            end
+
+            local row = p.fetch(buildingId)
+            if not row then
+                return "[[Category:Errors]]<strong>BuildingBucket:</strong> no Bucket row for '" .. buildingId .. "'."
+            end
+
+            local lang = Locale.resolveLang(frame)
+            local localeBuilding = Locale.getBuilding(buildingId, lang)
+
+            if DEBUG then 
+                mw.log("> lang")
+                mw.logObject(lang)
+                mw.log("> localeBuilding")
+                mw.logObject(localeBuilding)
+                mw.log("> args")
+                mw.logObject(args)
+                mw.log("> row")
+                mw.logObject(row)
+            end
+
+            local resArgs = {
+                building_id = buildingId,
+                display_name = localeBuilding and localeBuilding.name or buildingId,
+                description = (localeBuilding and not row.skip_description_set) and localeBuilding.description or "",
+            }
+
+            for key, value in pairs(row) do
+                resArgs[key] = paramValue(value)
+            end
+
+            local hex = row.color and mw.text.trim(tostring(row.color)) or ""
+            hex = hex:gsub("^#", "")
+            if hex ~= "" then
+                resArgs.color_css = hex
+            end
+
+            return frame:expandTemplate{ title = "Building Infobox", args = resArgs }
+        end
+
+        -- Renders N infoboxes. For debugging purposes.
+        function p.n_infoboxes(frame)
+            local n = tonumber(frame.args.n) or 1
+            local from = tonumber(frame.args.from) or 1
+
+            local parent = mw.html.create("div")
+                :css("display", "flex")
+                :css("flex-direction", "row")
+                :css("flex-wrap", "wrap")
+
+            local queryRes = bucket("building")
+                .select("building_id")
+                .run()
+
+            local total = #queryRes
+
+            local count = 0
+            for _, obj in ipairs(queryRes) do
+                count = count + 1
+                if count >= from then
+                    local buildingId = obj.building_id
+                    frame.args[1] = buildingId
+                    parent:node(p.infobox(frame))
+                end
+
+                if count == (from + n) then break end
+            end
+
+            return "Displaying " .. from .. " to " .. count .. " of " .. total, parent
+        end
+
+        return p
+        """;
+    
+    public const string RouterBuildingModule =
+        """
+        -- Module:BuildingData
+        -- Routes language-neutral building rows into Bucket tables.
+        -- Localized names/descriptions are resolved at render time via Module:Locale.
+
+        local templateTable = require("Module:BuildingBucket")
+
+        local p = {}
+
+        local function putRow(r)
+            bucket("building").put(r)
+        end
+
+        function p.putAll(frame)
+            local data = mw.loadData("Module:Building/data")
+            local count = 0
+            for _, row in ipairs(data) do
+                putRow(row)
+                count = count + 1
+            end
+            return string.format("Stored %d buildings into Bucket.", count)
+        end
+
+        return p
+        """;
+    
+    #endregion
+    
     #region Game Fields
 
     public const string RouterGameFieldModule =
@@ -1845,6 +2012,14 @@ internal static class WikiContent
         It is generated automatically; do not edit by hand.
 
         {{#invoke:MoodleData|putAll}}
+        """;
+
+    public const string TriggerBuildingPage =
+        """
+        This page stores all moodle data into [[Extension:Bucket|Bucket]] in a single batch.
+        It is generated automatically; do not edit by hand.
+
+        {{#invoke:BuildingData|putAll}}
         """;
 
     public const string TriggerGameFieldPage =

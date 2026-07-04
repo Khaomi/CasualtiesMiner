@@ -74,7 +74,19 @@ internal sealed class MediaWikiClient : IDisposable
             return "nochange";
 
         if (dryRun)
+        {
+            var sanitizedTitle = Path.GetInvalidFileNameChars().Aggregate(title, (current, ch) => current.Replace(ch, '_'));
+            var dryRunPath = Path.Combine(Program.DryRunFolder, sanitizedTitle + ".txt");
+            await using var writer = new StreamWriter(File.OpenWrite(dryRunPath));
+            
+            await writer.WriteLineAsync("=== Page ===");
+            await writer.WriteLineAsync(title);
+            await writer.WriteLineAsync("=== Summary ===");
+            await writer.WriteLineAsync(summary);
+            await writer.WriteLineAsync("=== Contents ===");
+            await writer.WriteLineAsync(text);
             return "dry-run";
+        }
 
         if (_csrfToken is null)
             throw new InvalidOperationException("Not logged in: call LoginAsync first.");

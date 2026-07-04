@@ -26,6 +26,8 @@ internal static class BucketSchemas
     public const string GameFieldBucket = "Gamefield";
     public const string BodyFieldBucket = "Bodyfield";
 
+    public const string BuildingBucket = "Building";
+
     private const string IndexSchema =
         """
         {
@@ -197,6 +199,29 @@ internal static class BucketSchemas
         """;
 
     /// <summary>
+    /// Full building schema.
+    /// </summary>
+    private const string BuildingFieldSchema =
+        """
+        {
+            "building_id":             { "type": "TEXT" },
+            "items_drop_on_destroy":   { "type": "TEXT", "repeated": true },
+            "health":                  { "type": "DOUBLE" },
+            "require_ground":          { "type": "BOOLEAN" },
+            "skip_description_set":    { "type": "BOOLEAN" },
+            "drop_chance_multiplier":  { "type": "DOUBLE" },
+            "guaranteed_drop_amount":  { "type": "DOUBLE" },
+            "always_drop":             { "type": "TEXT", "repeated": true },
+            "item_categories_to_add":  { "type": "TEXT", "repeated": true },
+            "block_footstep_sound_id": { "type": "INTEGER" },
+            "cant_hit":                { "type": "BOOLEAN" },
+            "animal":                  { "type": "BOOLEAN" },
+            "ignore_body_optimize":    { "type": "BOOLEAN" },
+            "metallic":                { "type": "BOOLEAN" }
+        }
+        """;
+
+    /// <summary>
     /// Bucket name for a given game category (e.g. <c>medical</c> -&gt; <c>Item_medical</c>).
     /// </summary>
     public static string CategoryBucket(string category)
@@ -221,6 +246,7 @@ internal static class BucketSchemas
             (MoodleBucket, MoodleSchema),
             (GameFieldBucket, GameFieldSchema),
             (BodyFieldBucket, BodyFieldSchema),
+            (BuildingBucket, BuildingFieldSchema),
         };
 
         foreach (var category in ItemRowMapper.Categories)

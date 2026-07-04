@@ -4,7 +4,7 @@ using CasualtiesMiner.Uploader.Wiki;
 namespace CasualtiesMiner.Uploader.Data;
 
 /// <summary>
-/// Converts dumped <see cref="LiquidRow"/> instances into wiki-ready <see cref="LiquidRow"/>s.
+/// Converts dumped <see cref="LiquidType"/> instances into wiki-ready <see cref="LiquidRow"/>s.
 /// </summary>
 internal sealed class LiquidRowMapper
 {

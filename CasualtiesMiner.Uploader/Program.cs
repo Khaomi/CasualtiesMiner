@@ -211,7 +211,9 @@ public static class Program
             var buildingsTitle = LocaleWikiGenerator.ModuleTitle(locale.Code, "buildings");
             var buildingsStatus = await client.EditAsync(
                 buildingsTitle,
-                LocaleWikiGenerator.BuildObjectsLocaleModule(locale, buildingItems, "buildings"),
+                LocaleWikiGenerator.BuildLocaleModule(
+                    locale,
+                    buildingItems.Select(id => LocaleModuleEntry.Create(id, GameObjectType.Building))),
                 $"Update {locale.Code} building strings",
                 options.DryRun);
             Console.WriteLine($"  {buildingsTitle}: {buildingsStatus}");

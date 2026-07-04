@@ -7,5 +7,6 @@ internal enum GameObjectType
     Liquid,
     Block,
     Moodle,
-    Recipe
+    Recipe,
+    Building
 }

@@ -5,12 +5,9 @@ namespace CasualtiesMiner.Dumper.Game;
 
 public sealed class AssetsParser : IDisposable
 {
-    private readonly AssetsManager _manager;
-    
-    private readonly AssetsFileInstance? _resourcesAssets;
-    private readonly AssetsFileInstance? _globalGameManagers;
-    
-    private readonly AssetFileInfo? _resourceManager;
+    public AssetsFileInstance? ResourcesAssets { get; private set; }
+    public AssetsFileInstance? GlobalGameManagers { get; private set; }
+    public AssetFileInfo? ResourcesManager { get; private set; }
 
     public string GamePath { get; private set; }
 
@@ -31,19 +28,13 @@ public sealed class AssetsParser : IDisposable
         using var classPackage = OpenEmbeddedClassPackage();
         Manager.LoadClassPackage(classPackage);
 
-        var assetsPath = Path.Combine(GamePath, "resources.assets");
-        _resourcesAssets = Manager.LoadAssetsFile(assetsPath, loadDeps: true);
+        ResourcesAssets = Manager.LoadAssetsFile(Path.Combine(GamePath, "resources.assets"), loadDeps: true);
+        Manager.LoadClassDatabaseFromPackage(ResourcesAssets.file.Metadata.UnityVersion);
+        
+        GlobalGameManagers = Manager.LoadAssetsFile(Path.Combine(GamePath, "globalgamemanagers"), loadDeps: true);
+        ResourcesManager = GlobalGameManagers.file.GetAssetsOfType(AssetClassID.ResourceManager)[0];
 
-        Manager.LoadClassDatabaseFromPackage(_resourcesAssets.file.Metadata.UnityVersion);
-        
-        
-        _globalGameManagers = _manager.LoadAssetsFile(Path.Combine(gameDataPath, "globalgamemanagers"));
-        _manager.LoadClassDatabaseFromPackage(_globalGameManagers.file.Metadata.UnityVersion);
-        
-        _resourcesAssets = _manager.LoadAssetsFile(Path.Combine(gameDataPath, "resources.assets"));
-        _resourceManager = _globalGameManagers.file.GetAssetsOfType(AssetClassID.ResourceManager)[0];
-
-        return instance;
+        return ResourcesAssets;
     }
 
     private static Stream OpenEmbeddedClassPackage()
@@ -61,26 +52,32 @@ public sealed class AssetsParser : IDisposable
     
     public IEnumerable<AssetTypeValueField> ExtractMonoBehaviours(string behaviourName, bool onlyFromNamedPrefabs = true)
     {
+        if (ResourcesAssets == null || GlobalGameManagers == null || ResourcesManager == null)
+        {
+            Console.WriteLine("Cannot extract monobehaviours, call LoadResources() first.");
+            return [];
+        }
+        
         if (!onlyFromNamedPrefabs)
         {
-            return _resourcesAssets.file.GetAssetsOfType(AssetClassID.MonoBehaviour)
+            return ResourcesAssets.file.GetAssetsOfType(AssetClassID.MonoBehaviour)
                 .Where(x =>
                 {
-                    var script = _manager.GetExtAsset(_resourcesAssets, _manager.GetBaseField(_resourcesAssets, x)["m_Script"]);
+                    var script = Manager.GetExtAsset(ResourcesAssets, Manager.GetBaseField(ResourcesAssets, x)["m_Script"]);
                     return script.baseField != null && script.baseField["m_Name"].AsString == behaviourName;
                 })
-                .Select(x => _manager.GetBaseField(_resourcesAssets, x))
+                .Select(x => Manager.GetBaseField(ResourcesAssets, x))
                 .ToList();
         }
 
-        var resourceManagerRoot = _manager.GetBaseField(_globalGameManagers, _resourceManager);
+        var resourceManagerRoot = Manager.GetBaseField(GlobalGameManagers, ResourcesManager);
 
         var references = resourceManagerRoot["m_Container.Array"].ToList();
         var monoBehavioursFound = new List<AssetTypeValueField>();
 
         foreach (var reference in references)
         {
-            var assetExt = _manager.GetExtAsset(_globalGameManagers, reference[1]);
+            var assetExt = Manager.GetExtAsset(GlobalGameManagers, reference[1]);
             
             if (assetExt.info == null)
                 continue;
@@ -90,14 +87,14 @@ public sealed class AssetsParser : IDisposable
                 // Extract first one we find in the root object's components
                 AssetExternal monoBehaviour = default;
 
-                foreach (var componentKeyPptr in _manager.GetBaseField(assetExt.file, assetExt.info)["m_Component.Array"])
+                foreach (var componentKeyPptr in Manager.GetBaseField(assetExt.file, assetExt.info)["m_Component.Array"])
                 {
-                    var componentInstance = _manager.GetExtAsset(assetExt.file, componentKeyPptr[0]);
+                    var componentInstance = Manager.GetExtAsset(assetExt.file, componentKeyPptr[0]);
 
                     if (componentInstance.info == null || componentInstance.info.TypeId != (int)AssetClassID.MonoBehaviour)
                         continue;
 
-                    var script = _manager.GetExtAsset(_resourcesAssets, componentInstance.baseField["m_Script"]);
+                    var script = Manager.GetExtAsset(ResourcesAssets, componentInstance.baseField["m_Script"]);
 
                     if (script.baseField == null || script.baseField["m_Name"].AsString != behaviourName)
                         continue;

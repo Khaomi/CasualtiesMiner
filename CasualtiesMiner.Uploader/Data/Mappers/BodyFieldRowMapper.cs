@@ -1,6 +1,7 @@
-﻿using CasualtiesMiner.Uploader.Wiki;
+﻿using CasualtiesMiner.Uploader.Data.BucketRows;
+using CasualtiesMiner.Uploader.Wiki;
 
-namespace CasualtiesMiner.Uploader.Data;
+namespace CasualtiesMiner.Uploader.Data.Mappers;
 
 internal static class BodyFieldRowMapper
 {
@@ -19,9 +20,6 @@ internal static class BodyFieldRowMapper
         Timer("body.limbs[1].dislocationTimer",
             GameFieldIds.DislocationHealSpeed, GameFieldIds.DislocationSplintMultiplier),
     ];
-
-    public static IReadOnlyDictionary<string, BodyFieldRow> ToLookup(IEnumerable<BodyFieldRow> rows) =>
-        rows.ToDictionary(row => row.BodyFieldId, StringComparer.Ordinal);
 
     public static bool IsTimerField(string bodyFieldId) =>
         Map().Any(row => row.BodyFieldId == bodyFieldId && row.Kind == "timer");

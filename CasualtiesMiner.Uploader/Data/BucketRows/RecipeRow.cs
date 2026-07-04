@@ -1,6 +1,6 @@
 ﻿using CasualtiesMiner.Shared.Models;
 
-namespace CasualtiesMiner.Uploader.Data;
+namespace CasualtiesMiner.Uploader.Data.BucketRows;
 
 /// <summary>
 /// A flattened, wiki-ready representation of a single recipe entity. All values are already converted to the

@@ -117,8 +117,9 @@ internal static class WikiUiLabels
             ["recipe.liquid_condition_at_least"] = "At least %s mL",
             ["recipe.liquid_quality"] = "Total (%s) %s quality",
             ["recipe.quality"] = "(%s) %s quality",
+            ["recipe.volume"] = "Volume: %dmL",
             ["recipe.info"] = "Info",
-            ["recipe.condition"] = "Condition: %d",
+            ["recipe.condition"] = "Condition: %d%%",
             ["recipe.amount"] = "Amount: %d",
             ["recipe.intRequired"] = "INT needed: %d",
         };

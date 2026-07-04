@@ -1,6 +1,5 @@
 ﻿using AssetsTools.NET.Extra;
 using AssetsTools.NET;
-using CasualtiesMiner.Shared.Models;
 
 namespace CasualtiesMiner.Dumper.Game;
 
@@ -8,29 +7,58 @@ public sealed class AssetsParser : IDisposable
 {
     private readonly AssetsManager _manager;
     
-    private readonly AssetsFileInstance _resourcesAssets;
-    private readonly AssetsFileInstance _globalGameManagers;
+    private readonly AssetsFileInstance? _resourcesAssets;
+    private readonly AssetsFileInstance? _globalGameManagers;
     
-    private readonly AssetFileInfo _resourceManager;
+    private readonly AssetFileInfo? _resourceManager;
+
+    public string GamePath { get; private set; }
+
+    public AssetsManager Manager { get; private set; }
 
     public AssetsParser(string gameDataPath)
     {
-        _manager = new AssetsManager
+        GamePath = gameDataPath;
+
+        Manager = new AssetsManager
         {
             MonoTempGenerator = new MonoCecilTempGenerator(Path.Combine(gameDataPath, "Managed"))
         };
+    }
 
-        using var tpk = File.OpenRead("Assets/lz4.tpk");
+    public AssetsFileInstance LoadResources()
+    {
+        using var classPackage = OpenEmbeddedClassPackage();
+        Manager.LoadClassPackage(classPackage);
 
-        _manager.LoadClassPackage(tpk);
+        var assetsPath = Path.Combine(GamePath, "resources.assets");
+        _resourcesAssets = Manager.LoadAssetsFile(assetsPath, loadDeps: true);
+
+        Manager.LoadClassDatabaseFromPackage(_resourcesAssets.file.Metadata.UnityVersion);
+        
         
         _globalGameManagers = _manager.LoadAssetsFile(Path.Combine(gameDataPath, "globalgamemanagers"));
         _manager.LoadClassDatabaseFromPackage(_globalGameManagers.file.Metadata.UnityVersion);
         
         _resourcesAssets = _manager.LoadAssetsFile(Path.Combine(gameDataPath, "resources.assets"));
         _resourceManager = _globalGameManagers.file.GetAssetsOfType(AssetClassID.ResourceManager)[0];
+
+        return instance;
     }
 
+    private static Stream OpenEmbeddedClassPackage()
+    {
+        var assembly = typeof(AssetsParser).Assembly;
+        var resourceName = assembly.GetManifestResourceNames()
+            .FirstOrDefault(static n => n.EndsWith("lz4.tpk", StringComparison.OrdinalIgnoreCase));
+
+        return resourceName is null
+            ? throw new InvalidOperationException(
+                "Embedded class package not found. Add Assets/lz4.tpk as EmbeddedResource in CasualtiesMiner.Dumper.csproj.")
+            : assembly.GetManifestResourceStream(resourceName)
+                ?? throw new InvalidOperationException($"Failed to open embedded resource '{resourceName}'.");
+    }
+    
     public IEnumerable<AssetTypeValueField> ExtractMonoBehaviours(string behaviourName, bool onlyFromNamedPrefabs = true)
     {
         if (!onlyFromNamedPrefabs)
@@ -85,15 +113,11 @@ public sealed class AssetsParser : IDisposable
 
         return monoBehavioursFound;
     }
-    
+
     public void Dispose()
     {
-        _manager?.UnloadAll(true);
+        Manager?.UnloadAll(true);
+        Manager = default;
         GC.SuppressFinalize(this);
-    }
-
-    ~AssetsParser()
-    {
-        Dispose();
     }
 }

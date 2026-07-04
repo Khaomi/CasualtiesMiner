@@ -1,4 +1,4 @@
-﻿namespace CasualtiesMiner.Uploader.Data;
+﻿namespace CasualtiesMiner.Uploader.Data.BucketRows;
 
 /// <summary>
 /// Wiki-ready body field metadata for <c>Module:BodyField/data</c> / Bucket <c>bodyfield</c>.

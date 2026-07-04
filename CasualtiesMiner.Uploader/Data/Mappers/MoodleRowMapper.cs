@@ -1,8 +1,9 @@
 ﻿using CasualtiesMiner.Shared;
 using CasualtiesMiner.Shared.Models;
+using CasualtiesMiner.Uploader.Data.BucketRows;
 using CasualtiesMiner.Uploader.Wiki;
 
-namespace CasualtiesMiner.Uploader.Data;
+namespace CasualtiesMiner.Uploader.Data.Mappers;
 
 /// <summary>
 /// Converts dumped <see cref="MoodleRow"/> instances into wiki-ready <see cref="MoodleRow"/>s.

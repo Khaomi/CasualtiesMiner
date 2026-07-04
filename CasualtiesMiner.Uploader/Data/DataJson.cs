@@ -43,6 +43,19 @@ internal static class DataJson
                ?? throw new InvalidOperationException("Could not parse liquids from data.json.");
     }
 
+    internal static BlockInfo[] LoadBlocks(string path)
+    {
+        using var document = JsonDocument.Parse(File.ReadAllText(path));
+
+        if (!document.RootElement.TryGetProperty("tiles", out var itemsElement))
+        {
+            throw new InvalidOperationException("data.json has no 'blocks' array.");
+        }
+
+        return itemsElement.Deserialize<BlockInfo[]>(ReadOptions)
+               ?? throw new InvalidOperationException("Could not parse blocks from data.json.");
+    }
+
     internal static Recipe[] LoadRecipes(string path)
     {
         using var document = JsonDocument.Parse(File.ReadAllText(path));

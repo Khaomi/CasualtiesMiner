@@ -1,4 +1,6 @@
-﻿namespace CasualtiesMiner.Uploader.Data;
+﻿using CasualtiesMiner.Uploader.Data.BucketRows;
+
+namespace CasualtiesMiner.Uploader.Data;
 
 /// <summary>
 /// Stable keys for <see cref="GameFieldRow"/> rows (match <c>GameFields</c> property names, lowercased).

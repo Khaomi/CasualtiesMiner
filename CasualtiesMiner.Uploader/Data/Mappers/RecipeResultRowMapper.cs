@@ -1,6 +1,7 @@
 ﻿using CasualtiesMiner.Shared.Models;
+using CasualtiesMiner.Uploader.Data.BucketRows;
 
-namespace CasualtiesMiner.Uploader.Data;
+namespace CasualtiesMiner.Uploader.Data.Mappers;
 
 internal sealed class RecipeResultRowMapper
 {

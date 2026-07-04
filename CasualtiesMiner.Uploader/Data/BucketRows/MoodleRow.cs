@@ -1,4 +1,4 @@
-﻿namespace CasualtiesMiner.Uploader.Data;
+﻿namespace CasualtiesMiner.Uploader.Data.BucketRows;
 
 /// <summary>
 /// Wiki-ready moodle row for <c>Module:Moodle/data</c>.

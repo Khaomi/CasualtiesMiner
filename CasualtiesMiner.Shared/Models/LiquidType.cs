@@ -1,5 +1,10 @@
 ﻿namespace CasualtiesMiner.Shared.Models;
 
+public sealed partial class LiquidType
+{
+    public string liquidId = "";
+}
+
 public sealed partial class Color : IEquatable<Color>
 {
     public byte a;

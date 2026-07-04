@@ -1,7 +1,8 @@
 ﻿using CasualtiesMiner.Shared.Models;
+using CasualtiesMiner.Uploader.Data.BucketRows;
 using System.Globalization;
 
-namespace CasualtiesMiner.Uploader.Data;
+namespace CasualtiesMiner.Uploader.Data.Mappers;
 
 internal static class GameFieldRowMapper
 {

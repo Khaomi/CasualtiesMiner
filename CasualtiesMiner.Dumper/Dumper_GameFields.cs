@@ -1,4 +1,4 @@
-using CasualtiesMiner.Dumper.Parsing;
+﻿using CasualtiesMiner.Dumper.Parsing;
 using CasualtiesMiner.Shared.Models;
 
 namespace CasualtiesMiner.Dumper;
@@ -20,6 +20,7 @@ public sealed partial class Dumper
         var dislocationHealSpeed = ILGameFieldReader.ReadStaticFloatInitializer(limbType, "dislocationHealSpeed");
         var boneHealTimerMax = ILGameFieldReader.ReadInstanceFieldStore(limbType, "BreakBone", "boneHealTimer");
 
+        // can be broken after next update
         var intensityScale = moodleManagerType is not null
             ? ILGameFieldReader.ReadMoodleIntensityScale(moodleManagerType)
             : null;

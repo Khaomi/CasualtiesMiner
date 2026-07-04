@@ -1,4 +1,5 @@
 ﻿using CasualtiesMiner.Uploader.Data;
+using CasualtiesMiner.Uploader.Data.Enums;
 using CasualtiesMiner.Uploader.Data.Locale;
 using System.Text;
 
@@ -45,71 +46,49 @@ internal static class LocaleWikiGenerator
         return $"Module:Locale/{langCode}/{suffix}";
     }
 
-    public static string BuildObjectsLocaleModule(GameLocale locale, IReadOnlyCollection<string> objectIds, string type)
+    public static string BuildLocaleModule(GameLocale locale, IEnumerable<LocaleModuleEntry> entries)
     {
         var sb = new StringBuilder();
         sb.AppendLine(GeneratedHeader);
         sb.AppendLine("return {");
 
-        foreach (var id in objectIds.OrderBy(x => x, StringComparer.Ordinal))
+        foreach (var entry in entries.OrderBy(e => e.Key, StringComparer.Ordinal))
         {
-            string name = string.Empty;
-            string description = string.Empty;
+            var (name, description) = ResolveLocaleStrings(locale, entry);
 
-            if (type == "main")
-            {
-                name = locale.GetObjectName(id);
-                description = locale.GetObjectDescription(id);
-            }
-            if (type == "other")
-            {
-                name = locale.GetOther(id, $"{id}:TEMP_SMTH_IS_WRONG");
-                description = locale.GetOtherDesc(id, $"{id}:TEMP_SMTH_IS_WRONG");
-            }
-            if (type == "moodles")
-            {
-                name = locale.GetMoodles(id, $"{id}:TEMP_SMTH_IS_WRONG");
-                description = locale.GetMoodlesDesc(id, $"{id}:TEMP_SMTH_IS_WRONG");
-            }
-            if (type == "buildings")
-            {
-                name = locale.GetBuildings(id, $"{id}:TEMP_SMTH_IS_WRONG");
-                description = locale.GetBuildingsDesc(id, $"{id}:TEMP_SMTH_IS_WRONG");
-            }
-
-            sb.Append("  [").Append(LuaFormat.String(id)).Append("] = { ");
+            sb.Append("  [").Append(LuaFormat.String(entry.Key)).Append("] = { ");
             sb.Append("name = ").Append(LuaFormat.String(name)).Append(", ");
             sb.Append("description = ").Append(LuaFormat.String(description));
             sb.AppendLine(" },");
-
         }
 
         sb.AppendLine("}");
         return sb.ToString();
     }
 
-    // TODO: Fix this IReadOnlyList<LiquidRow> later because now we have
-    // discrepancy between BuildLiquidsLocaleModule and BuildObjectsLocaleModule
-    public static string BuildLiquidsLocaleModule(GameLocale locale, IReadOnlyList<LiquidRow> liquids)
+    private static (string Name, string Description) ResolveLocaleStrings(GameLocale locale, LocaleModuleEntry entry)
     {
-        var sb = new StringBuilder();
-        sb.AppendLine(GeneratedHeader);
-        sb.AppendLine("return {");
+        var fallback = $"{entry.Key}:TEMP_SMTH_IS_WRONG";
 
-        foreach (var liquid in liquids.OrderBy(l => l.LiquidId, StringComparer.Ordinal))
+        return entry.Type switch
         {
-            var localeKey = liquid.LocaleName;
-            var name = locale.GetOther(localeKey, $"{liquid.LiquidId}:TEMP_SMTH_IS_WRONG");
-            var description = locale.GetOtherDesc(localeKey, $"{liquid.LiquidId}:TEMP_SMTH_IS_WRONG");
-
-            sb.Append("  [").Append(LuaFormat.String(liquid.LiquidId)).Append("] = { ");
-            sb.Append("name = ").Append(LuaFormat.String(name)).Append(", ");
-            sb.Append("description = ").Append(LuaFormat.String(description));
-            sb.AppendLine(" },");
-        }
-
-        sb.AppendLine("}");
-        return sb.ToString();
+            GameObjectType.Item => (
+                locale.GetObjectName(entry.LocaleKey),
+                locale.GetObjectDescription(entry.LocaleKey)),
+            GameObjectType.Block => (
+                locale.GetOther(entry.LocaleKey, fallback),
+                string.Empty),
+            GameObjectType.Moodle => (
+                locale.GetMoodles(entry.LocaleKey, fallback),
+                locale.GetMoodlesDesc(entry.LocaleKey, fallback)),
+            GameObjectType.Liquid => (
+                locale.GetOther(entry.LocaleKey, fallback),
+                locale.GetOtherDesc(entry.LocaleKey, fallback)),
+            GameObjectType.Building => (
+                locale.GetBuildings(entry.LocaleKey, fallback),
+                locale.GetBuildingsDesc(entry.LocaleKey, fallback)),
+            _ => (fallback, fallback),
+        };
     }
 
     public static string BuildUiModule(GameLocale locale)
@@ -118,24 +97,19 @@ internal static class LocaleWikiGenerator
         sb.AppendLine(GeneratedHeader);
         sb.AppendLine("return {");
 
-        //UI keys
         foreach (var (key, gameKey, fallback) in UiKeys)
         {
             var value = locale.GetOther(gameKey, fallback);
             sb.Append("  ").Append(key).Append(" = ").Append(LuaFormat.String(value)).AppendLine(",");
         }
 
-        //Item categories
         foreach (var (categoryId, fallback) in CategoryLabels)
         {
             var key = "cat_" + categoryId;
-
-            // Game locale has no dedicated category names; use English defaults until translators add keys.
             var value = locale.GetOther(key, fallback);
             sb.Append("  ").Append(key).Append(" = ").Append(LuaFormat.String(value)).AppendLine(",");
         }
 
-        //cq categories
         foreach (var (key, value) in locale.Other.OrderBy(e => e.Key, StringComparer.Ordinal))
         {
             if (key.Length <= 2

@@ -1,4 +1,4 @@
-using CasualtiesMiner.Uploader.Data;
+using CasualtiesMiner.Uploader.Data.BucketRows;
 using System.Text.RegularExpressions;
 
 namespace CasualtiesMiner.Uploader.Wiki;

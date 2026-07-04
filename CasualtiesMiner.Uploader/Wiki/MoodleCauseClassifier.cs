@@ -1,6 +1,5 @@
-﻿using System.Text.RegularExpressions;
-
-using CasualtiesMiner.Uploader.Data;
+﻿using CasualtiesMiner.Uploader.Data.Mappers;
+using System.Text.RegularExpressions;
 
 namespace CasualtiesMiner.Uploader.Wiki;
 

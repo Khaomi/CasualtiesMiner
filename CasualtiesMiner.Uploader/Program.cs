@@ -1,5 +1,8 @@
 using CasualtiesMiner.Uploader.Data;
+using CasualtiesMiner.Uploader.Data.BucketRows;
+using CasualtiesMiner.Uploader.Data.Enums;
 using CasualtiesMiner.Uploader.Data.Locale;
+using CasualtiesMiner.Uploader.Data.Mappers;
 using CasualtiesMiner.Uploader.MediaWiki;
 using CasualtiesMiner.Uploader.Wiki;
 
@@ -28,15 +31,23 @@ public static class Program
             return 1;
         }
 
+        //basic stuff
         var itemRows = LoadItemRows(options);
         var liquidRows = LoadLiquidRows(options);
+        var blockRows = LoadBlockRows(options);
         var moodleRows = LoadMoodleRows(options);
+        var buildingEntityRows = LoadBuildingEntityRows(options);
+
+        //recipe
         var recipeItemRows = LoadRecipeItemRows(options);
         var recipeResultRows = LoadRecipeResultRows(options);
         var recipeRows = LoadRecipeRows(options);
+
+        //fields
         var gameFieldRows = LoadGameFields(options);
-        var buildingEntityRows = LoadBuildingEntityRows(options);
         var bodyFieldRows = BodyFieldRowMapper.Map();
+
+        //locale
         var locales = await LoadLocalesAsync(options);
 
         Console.WriteLine($"Loaded {itemRows.Count} items from {options.DataPath}.");
@@ -79,6 +90,7 @@ public static class Program
                 locales,
                 itemRows,
                 liquidRows,
+                blockRows,
                 moodleRows,
                 buildingEntityRows,
                 options);
@@ -90,6 +102,7 @@ public static class Program
             await UploadBulkAsync(client,
                 itemRows,
                 liquidRows,
+                blockRows,
                 recipeItemRows,
                 recipeResultRows,
                 recipeRows,
@@ -121,6 +134,7 @@ public static class Program
         LocaleCatalog locales,
         IReadOnlyList<ItemRow> itemRows,
         IReadOnlyList<LiquidRow> liquidRows,
+        IReadOnlyList<BlockRow> blockRows,
         IReadOnlyList<MoodleRow> moodleRows,
         IReadOnlyList<BuildingEntityRow> buildingRows,
         CliOptions options)
@@ -149,40 +163,52 @@ public static class Program
 
         var itemIds = itemRows.Select(r => r.ItemId).ToArray();
         var moodleItems = moodleRows.Select(r => r.LocaleId).ToArray();
-        //var liquidsItems = liquidRows.Select(r => r.LocaleName).ToArray();
+        var blockItems = blockRows.Select(r => r.Name).ToArray();
         var buildingItems = buildingRows.Select(r => r.Id).ToArray();
 
         foreach (var locale in locales.Locales)
         {
             var itemsTitle = LocaleWikiGenerator.ModuleTitle(locale.Code, "items");
-
             var itemsStatus = await client.EditAsync(
                 itemsTitle,
-                LocaleWikiGenerator.BuildObjectsLocaleModule(locale, itemIds, "main"),
+                LocaleWikiGenerator.BuildLocaleModule(
+                    locale,
+                    itemIds.Select(id => LocaleModuleEntry.Create(id, GameObjectType.Item))),
                 $"Update {locale.Code} item strings",
                 options.DryRun);
             Console.WriteLine($"  {itemsTitle}: {itemsStatus}");
 
             var liquidsTitle = LocaleWikiGenerator.ModuleTitle(locale.Code, "liquids");
-
             var liquidsStatus = await client.EditAsync(
                 liquidsTitle,
-                LocaleWikiGenerator.BuildLiquidsLocaleModule(locale, liquidRows),
+                LocaleWikiGenerator.BuildLocaleModule(
+                    locale,
+                    liquidRows.Select(LocaleModuleEntry.CreateFromLiquid)),
                 $"Update {locale.Code} liquid strings",
                 options.DryRun);
             Console.WriteLine($"  {liquidsTitle}: {liquidsStatus}");
 
-            var moodlesTitle = LocaleWikiGenerator.ModuleTitle(locale.Code, "moodles");
+            var blocksTitle = LocaleWikiGenerator.ModuleTitle(locale.Code, "blocks");
+            var blocksStatus = await client.EditAsync(
+                blocksTitle,
+                LocaleWikiGenerator.BuildLocaleModule(
+                    locale,
+                    blockItems.Select(id => LocaleModuleEntry.Create(id, GameObjectType.Block))),
+                $"Update {locale.Code} tile strings",
+                options.DryRun);
+            Console.WriteLine($"  {blocksTitle}: {blocksStatus}");
 
+            var moodlesTitle = LocaleWikiGenerator.ModuleTitle(locale.Code, "moodles");
             var moodlesStatus = await client.EditAsync(
                 moodlesTitle,
-                LocaleWikiGenerator.BuildObjectsLocaleModule(locale, moodleItems, "moodles"),
+                LocaleWikiGenerator.BuildLocaleModule(
+                    locale,
+                    moodleItems.Select(id => LocaleModuleEntry.Create(id, GameObjectType.Moodle))),
                 $"Update {locale.Code} moodle strings",
                 options.DryRun);
             Console.WriteLine($"  {moodlesTitle}: {moodlesStatus}");
 
             var buildingsTitle = LocaleWikiGenerator.ModuleTitle(locale.Code, "buildings");
-
             var buildingsStatus = await client.EditAsync(
                 buildingsTitle,
                 LocaleWikiGenerator.BuildObjectsLocaleModule(locale, buildingItems, "buildings"),
@@ -191,7 +217,6 @@ public static class Program
             Console.WriteLine($"  {buildingsTitle}: {buildingsStatus}");
 
             var uiTitle = LocaleWikiGenerator.ModuleTitle(locale.Code, "ui");
-
             var uiStatus = await client.EditAsync(
                 uiTitle,
                 LocaleWikiGenerator.BuildUiModule(locale),
@@ -219,6 +244,13 @@ public static class Program
             options.DryRun);
         Console.WriteLine($"  {WikiContent.LiquidBucketModuleTitle}: {bucketLiquidModule}");
 
+        //var bucketBlockModule = await client.EditAsync(
+        //    WikiContent.BlockBucketModuleTitle,
+        //    WikiContent.BlockBucketModule,
+        //    "Update BlockBucket reader",
+        //    options.DryRun);
+        //Console.WriteLine($"  {WikiContent.LiquidBucketModuleTitle}: {bucketLiquidModule}");
+
         var bucketRecipeModule = await client.EditAsync(
             WikiContent.RecipeBucketModuleTitle,
             WikiContent.RecipeBucketModule,
@@ -245,6 +277,7 @@ public static class Program
         MediaWikiClient client,
         IReadOnlyList<ItemRow> itemRows,
         IReadOnlyList<LiquidRow> liquidRows,
+        IReadOnlyList<BlockRow> blockRows,
         IReadOnlyList<RecipeItemRow> recipeItemRows,
         IReadOnlyList<RecipeResultRow> recipeResultRows,
         IReadOnlyList<RecipeRow> recipeRows,
@@ -285,6 +318,21 @@ public static class Program
             "Regenerate liquid data",
             options.DryRun);
         Console.WriteLine($"  {WikiContent.LiquidDataModuleTitle}: {data}");
+
+        Console.WriteLine("== Tiles ==");
+        router = await client.EditAsync(
+            WikiContent.RouterBlockModuleTitle,
+            WikiContent.RouterBlockModule,
+            "Update block data router",
+            options.DryRun);
+        Console.WriteLine($"  {WikiContent.RouterBlockModuleTitle}: {router}");
+
+        data = await client.EditAsync(
+            WikiContent.BlockDataModuleTitle,
+            WikiGenerator.BuildBlockDataModule(blockRows),
+            "Regenerate block data",
+            options.DryRun);
+        Console.WriteLine($"  {WikiContent.BlockDataModuleTitle}: {data}");
 
         Console.WriteLine("== Moodles ==");
         router = await client.EditAsync(
@@ -404,6 +452,13 @@ public static class Program
             options.DryRun);
         Console.WriteLine($"  {WikiContent.TriggerLiquidPageTitle}: {liquidTrigger}");
 
+        var blockTrigger = await client.EditAsync(
+            WikiContent.TriggerBlockPageTitle,
+            WikiContent.TriggerBlockPage,
+            "Refresh Bucket block data",
+            options.DryRun);
+        Console.WriteLine($"  {WikiContent.TriggerBlockPageTitle}: {blockTrigger}");
+
         var recipeTrigger = await client.EditAsync(
             WikiContent.TriggerRecipePageTitle,
             WikiContent.TriggerRecipePage,
@@ -473,6 +528,17 @@ public static class Program
             .Where(item => !string.IsNullOrWhiteSpace(item.liquidId) || !string.IsNullOrWhiteSpace(item.localeName))
             .Select(LiquidRowMapper.Map)
             .OrderBy(row => row.LiquidId, StringComparer.Ordinal)
+            .ToList();
+    }
+
+    private static IReadOnlyList<BlockRow> LoadBlockRows(CliOptions options)
+    {
+        var blocks = DataJson.LoadBlocks(options.DataPath);
+
+        return blocks
+            .Where(item => !string.IsNullOrWhiteSpace(item.name))
+            .Select(BlockRowMapper.Map)
+            .OrderBy(row => row.Name, StringComparer.Ordinal)
             .ToList();
     }
 

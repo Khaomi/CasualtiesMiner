@@ -1,6 +1,7 @@
 ﻿using CasualtiesMiner.Shared.Models;
+using CasualtiesMiner.Uploader.Data.BucketRows;
 
-namespace CasualtiesMiner.Uploader.Data;
+namespace CasualtiesMiner.Uploader.Data.Mappers;
 
 /// <summary>
 /// Converts dumped <see cref="RecipeItemRow"/> instances into wiki-ready <see cref="RecipeItemRow"/>s.

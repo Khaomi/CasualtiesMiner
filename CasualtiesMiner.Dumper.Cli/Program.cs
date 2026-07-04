@@ -1,4 +1,5 @@
-﻿using CasualtiesMiner.Shared.Models;
+﻿using CasualtiesMiner.Dumper.Game;
+using CasualtiesMiner.Shared.Models;
 using ICSharpCode.Decompiler;
 using ICSharpCode.Decompiler.CSharp;
 using Mono.Cecil;
@@ -9,6 +10,8 @@ namespace CasualtiesMiner.Dumper.Cli;
 
 public class Program
 {
+    public const string GAME_PATH = "D:\\Steam\\steamapps\\common\\Casualties Unknown Demo\\CasualtiesUnknown_Data";
+
     public static async Task Main(string[] args)
     {
         var assemblyPath = args.Length > 0 ? args[0] : "Assembly-CSharp.dll";
@@ -94,6 +97,10 @@ public class Program
             Fields = fields ?? new GameFields(),
             Buildings = buildings,
         };
+
+        var ttt = new AssetsParser(GAME_PATH);
+
+        ttt.LoadResources();
 
         await File.WriteAllTextAsync("data.json",
             JsonSerializer.Serialize(dumpedData, DumperJsonOptions.Default));

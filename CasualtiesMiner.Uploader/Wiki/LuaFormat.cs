@@ -1,11 +1,16 @@
-using System.Globalization;
+﻿using System.Globalization;
 
 namespace CasualtiesMiner.Uploader.Wiki;
 
 internal static class LuaFormat
 {
-    public static string String(string value)
+    public static string String(string? value)
     {
+        if (value is null)
+        {
+            return "nil";
+        }
+
         return "\"" + value
             .Replace("\\", "\\\\")
             .Replace("\"", "\\\"")
@@ -19,5 +24,5 @@ internal static class LuaFormat
 
     public static string Num(double value) => value.ToString("R", CultureInfo.InvariantCulture);
 
-    public static string TableKey(string key) => "[" + String(key) + "]";
+    public static string TableKey(string? key) => "[" + String(key) + "]";
 }

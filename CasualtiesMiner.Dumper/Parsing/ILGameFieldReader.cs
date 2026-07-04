@@ -210,6 +210,7 @@ internal static class ILGameFieldReader
     private static bool Assign(float value, out float result)
     {
         result = value;
+
         return true;
     }
 }

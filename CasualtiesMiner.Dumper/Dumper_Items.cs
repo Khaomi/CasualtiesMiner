@@ -1,4 +1,5 @@
 ﻿using CasualtiesMiner.Dumper.Game;
+using CasualtiesMiner.Dumper.Parsing.Delegates;
 using CasualtiesMiner.Shared.Models;
 using ICSharpCode.Decompiler.CSharp;
 using Mono.Cecil.Cil;
@@ -127,6 +128,15 @@ public sealed partial class Dumper
                 min = GetValue(itemDict, "rec", 2)
             };
             item.qualities = ConvertList<CraftingQuality>(GetValue<List<object?>>(itemDict, "qualities"));
+
+            if (item.useAction != null)
+            {
+                DelegateParser.Parse(item.useAction);
+            }
+            if (item.useLimbAction != null)
+            {
+                DelegateParser.Parse(item.useLimbAction);
+            }
 
             itemList.Add(item);
             continue;

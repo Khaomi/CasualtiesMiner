@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using System.Globalization;
+using System.Reflection;
 using AngouriMath;
 using TreeSitter;
 
@@ -19,11 +20,16 @@ internal static class MathParser
             case "member_access_expression":
             case "element_access_expression":
             case "string_literal":
-                return CreateVariableUnchecked(MathName(node.Text));
+            case "interpolated_string_expression":
+                return CreateVar(MathName(node.Text));
             case "integer_literal":
-                return MathS.Numbers.Create(int.Parse(node.Text));
+                return MathS.Numbers.Create(int.Parse(node.Text, CultureInfo.InvariantCulture));
             case "real_literal":
-                return MathS.Numbers.Create(float.Parse(node.Text.Replace("f", "")));
+                return MathS.Numbers.Create(float.Parse(node.Text.Replace("f", ""), CultureInfo.InvariantCulture));
+            case "boolean_literal":
+                return MathS.Boolean.Create(node.Text == "true");
+            case "null_literal":
+                return CreateVar("null");
             case "binary_expression":
             {
                 var left = ToMath(node.GetChildForField("left")!);
@@ -36,6 +42,7 @@ internal static class MathParser
                     "*" => left * right,
                     "/" => left / right,
                     "==" => MathS.Equality(left, right),
+                    "!=" => !MathS.Equality(left, right),
                     "&&" => left & right,
                     "||" => left | right,
                     "<" => left < right,
@@ -61,7 +68,7 @@ internal static class MathParser
                 var func = node.NamedChildren[0].Text;
                 var args = node.NamedChildren[1].NamedChildren.Select(x =>
                     ToMath(x.Children.Count > 1 ? FindIdentifier(x)! : x.Children[0]));
-                return MathS.Apply(CreateVariableUnchecked(MathName(func)), args.ToArray());
+                return MathS.Apply(CreateVar(MathName(func)), args.ToArray());
             case "parenthesized_expression":
                 return ToMath(node.NamedChildren[0]);
             case "conditional_expression":
@@ -69,6 +76,13 @@ internal static class MathParser
                     ToMath(node.GetChildForField("condition")!),
                     ToMath(node.GetChildForField("consequence")!),
                     ToMath(node.GetChildForField("alternative")!));
+            case "cast_expression":
+                return ToMath(node.GetChildForField("value")!);
+            case "object_creation_expression":
+            case "array_creation_expression":
+                return CreateVar("<object>"); // TODO parse these
+            case "lambda_expression":
+                return CreateVar("<lambda>"); // TODO parse these
             default:
                 throw new Exception($"Unknown identifier of type {node.Type}: {node.Text}");
         }
@@ -89,7 +103,7 @@ internal static class MathParser
         return node.NamedChildren.Select(FindIdentifier).FirstOrDefault(x => x != null);
     }
 
-    private static Entity.Variable CreateVariableUnchecked(string name)
+    public static Entity.Variable CreateVar(string name)
     {
         return (Entity.Variable)CreateVariableUncheckedMethod.Invoke(null, [name])!;
     }

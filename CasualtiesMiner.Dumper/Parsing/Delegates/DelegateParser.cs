@@ -19,13 +19,15 @@ internal static class DelegateParser
     [DllImport("tree-sitter", CallingConvention = CallingConvention.Cdecl)]
     private static extern void ts_query_cursor_set_max_start_depth(IntPtr cursor, uint max_start_depth);
 
-    public static List<Operation> Parse(string[] lines)
+    public static List<Effect>? Parse(string[]? lines)
     {
+        if (lines == null) return null;
         using var parser = new Parser(Language);
         using var tree = parser.Parse(string.Join("\n", lines))!;
         Query query = new Query(Language, @"(local_function_statement body: (_) @body)");
         var body = query.Execute(tree.RootNode).Captures.First().Node;
-        return ParseBlock(body);
+        var operations = ParseBlock(body);
+        return operations.Select(x => EffectParser.FromOperation(x)).ToList();
     }
 
     private static List<Operation> ParseBlock(Node block, Dictionary<Entity, Entity>? variables = null)
@@ -48,7 +50,7 @@ internal static class DelegateParser
             var type = parsed["type"];
             if (type.Text is "float" or "bool")
             {
-                variables[parsed["name"].Text] = MathParser.ToMath(parsed["content"]).Substitute(variables);
+                variables[MathParser.CreateVar(parsed["name"].Text)] = MathParser.ToMath(parsed["content"]).Substitute(variables);
             }
         }
 
@@ -207,7 +209,11 @@ internal static class DelegateParser
 
     private static Dictionary<string, Node> QueryRoot(Node node, string queryString)
     {
-        var query = cachedQueries.GetValueOrDefault(queryString) ?? new Query(Language, queryString);
+        if (!cachedQueries.TryGetValue(queryString, out var query))
+        {
+            query = new Query(Language, queryString);
+            cachedQueries[queryString] = query;
+        }
         using var cursor = new QueryCursor();
         ts_query_cursor_set_max_start_depth((IntPtr)queryCursorSelf.GetValue(cursor)!, 0);
         cursor.Execute(query, node);

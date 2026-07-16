@@ -1,6 +1,8 @@
 ﻿using CasualtiesMiner.Dumper.Parsing.Delegates;
+using CasualtiesMiner.Dumper.Parsing.Delegates.Operations;
 using CasualtiesMiner.Shared.Models;
 using ICSharpCode.Decompiler.CSharp;
+using ICSharpCode.Decompiler.CSharp.Syntax;
 using Mono.Cecil.Cil;
 using TreeSitter;
 using Language = CasualtiesMiner.Shared.Models.Language;
@@ -55,7 +57,7 @@ public sealed partial class Dumper
                 return objects?.Cast<T>().ToList() ?? [];
             }
 
-            DelegateParser.Parse(GetValue<string[]>(entry, "onDrink")); // TODO, this is here for testing rn
+            var res = DelegateParser.Parse(GetValue<string[]>(entry, "onDrink")); // TODO, this is here for testing rn
 
             var liquid = new LiquidType
             {

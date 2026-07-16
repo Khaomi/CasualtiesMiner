@@ -1,16 +1,25 @@
-﻿using AngouriMath;
+﻿using System.Reflection;
+using AngouriMath;
 using TreeSitter;
 
 namespace CasualtiesMiner.Dumper.Parsing.Delegates;
 
 internal static class MathParser
 {
+    private static readonly MethodInfo CreateVariableUncheckedMethod = typeof(Entity.Variable).GetMethod(
+        "CreateVariableUnchecked",
+        BindingFlags.Static | BindingFlags.NonPublic
+    )!;
+
     public static Entity ToMath(Node node)
     {
         switch (node.Type)
         {
             case "identifier":
-                return MathS.Var(node.Text);
+            case "member_access_expression":
+            case "element_access_expression":
+            case "string_literal":
+                return CreateVariableUnchecked(MathName(node.Text));
             case "integer_literal":
                 return MathS.Numbers.Create(int.Parse(node.Text));
             case "real_literal":
@@ -26,6 +35,13 @@ internal static class MathParser
                     "-" => left - right,
                     "*" => left * right,
                     "/" => left / right,
+                    "==" => MathS.Equality(left, right),
+                    "&&" => left & right,
+                    "||" => left | right,
+                    "<" => left < right,
+                    "<=" => left <= right,
+                    ">" => left > right,
+                    ">=" => left >= right,
                     _ => throw new Exception($"Unknown operator {op}")
                 };
             }
@@ -41,8 +57,40 @@ internal static class MathParser
                     _ => throw new Exception($"Unknown unary operator {op}")
                 };
             }
+            case "invocation_expression":
+                var func = node.NamedChildren[0].Text;
+                var args = node.NamedChildren[1].NamedChildren.Select(x =>
+                    ToMath(x.Children.Count > 1 ? FindIdentifier(x)! : x.Children[0]));
+                return MathS.Apply(CreateVariableUnchecked(MathName(func)), args.ToArray());
+            case "parenthesized_expression":
+                return ToMath(node.NamedChildren[0]);
+            case "conditional_expression":
+                return MathS.Apply("if",
+                    ToMath(node.GetChildForField("condition")!),
+                    ToMath(node.GetChildForField("consequence")!),
+                    ToMath(node.GetChildForField("alternative")!));
             default:
                 throw new Exception($"Unknown identifier of type {node.Type}: {node.Text}");
         }
+    }
+
+    private static string MathName(string name)
+    {
+        return name; //.Replace('.', '_').Replace('(', '_').Replace(')', '_');
+    }
+
+    private static Node? FindIdentifier(Node node)
+    {
+        if (node.Type == "identifier")
+        {
+            return node;
+        }
+
+        return node.NamedChildren.Select(FindIdentifier).FirstOrDefault(x => x != null);
+    }
+
+    private static Entity.Variable CreateVariableUnchecked(string name)
+    {
+        return (Entity.Variable)CreateVariableUncheckedMethod.Invoke(null, [name])!;
     }
 }

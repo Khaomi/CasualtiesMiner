@@ -2,7 +2,9 @@
 using System.Runtime.InteropServices;
 using AngouriMath;
 using CasualtiesMiner.Dumper.Parsing.Delegates.Operations;
+using CasualtiesMiner.Shared.Models;
 using TreeSitter;
+using Language = TreeSitter.Language;
 
 namespace CasualtiesMiner.Dumper.Parsing.Delegates;
 
@@ -19,7 +21,7 @@ internal static class DelegateParser
     [DllImport("tree-sitter", CallingConvention = CallingConvention.Cdecl)]
     private static extern void ts_query_cursor_set_max_start_depth(IntPtr cursor, uint max_start_depth);
 
-    public static List<Effect>? Parse(string[]? lines)
+    public static Effect[]? Parse(string[]? lines)
     {
         if (lines == null) return null;
         using var parser = new Parser(Language);
@@ -27,16 +29,26 @@ internal static class DelegateParser
         Query query = new Query(Language, @"(local_function_statement body: (_) @body)");
         var body = query.Execute(tree.RootNode).Captures.First().Node;
         var operations = ParseBlock(body);
-        return operations.Select(EffectParser.FromOperation).GroupBy(x => x.Key).SelectMany(x =>
-        {
-            var list = x.ToList();
-            if (x.Key == null || list.Any(y => y is not NumericEffect))
+        using var _ = MathS.Settings.DowncastingEnabled.Set(false);
+        return operations.Select(EffectParser.FromOperation)
+            .GroupBy(x => x.Condition != null || x.Timer != null ? null : x.Key).SelectMany(x =>
             {
-                return list;
-            }
+                var list = x.ToList();
+                if (x.Key == null || list.Any(y => y is not NumericEffect))
+                {
+                    return list;
+                }
 
-            return [list.Aggregate((a, b) => ((NumericEffect)a).MergeWith((NumericEffect)b))];
-        }).ToList();
+                return [list.Aggregate((a, b) => ((NumericEffect)a).MergeWith((NumericEffect)b))];
+            }).Select(x =>
+            {
+                if (x is NumericEffect e)
+                {
+                    e.Value = e.Value.Simplify().Replace(x => x.EvaluableNumerical ? x.EvalNumerical() : x);
+                }
+
+                return x;
+            }).ToArray();
     }
 
     private static List<Operation> ParseBlock(Node block, Dictionary<Entity, Entity>? variables = null)

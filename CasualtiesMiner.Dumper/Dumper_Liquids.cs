@@ -58,21 +58,14 @@ public sealed partial class Dumper
                 return objects?.Cast<T>().ToList() ?? [];
             }
 
-            var res1 = DelegateParser.Parse(GetValue<string[]>(entry, "onDrink")); // TODO, this is here for testing rn
-            var h = GetValue<string[]>(entry, "onHealthUse");
-            if (h != null)
-            {
-                var res2 = DelegateParser.Parse(h);
-            }; // TODO, this is here for testing rn
-
             var liquid = new LiquidType
             {
                 liquidId = registryId,
                 localeName = GetValue<string>(entry, "localeName"),
                 color = GetValue<Color>(entry, "color"),
                 valuePerLiter = GetValue<float>(entry, "valuePerLiter"),
-                onDrink = GetValue<string[]>(entry, "onDrink"),
-                onHealthUse = GetValue<string[]>(entry, "onHealthUse"),
+                onDrink = DelegateParser.Parse(GetValue<string[]>(entry, "onDrink")),
+                onHealthUse = DelegateParser.Parse(GetValue<string[]>(entry, "onHealthUse")),
                 healthUsable = GetValue<bool>(entry, "healthUsable"),
                 injectable = GetValue<bool>(entry, "injectable"),
                 localeFromItem = GetValue<bool>(entry, "localeFromItem"),

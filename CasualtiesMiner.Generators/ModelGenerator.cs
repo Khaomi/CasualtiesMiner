@@ -326,7 +326,7 @@ public sealed class ModelGenerator : IIncrementalGenerator
         if (type is INamedTypeSymbol { TypeKind: TypeKind.Delegate })
         {
             // Dumper stores decompiled method source lines for delegate assignments.
-            return "string[]?";
+            return "Effect[]?";
         }
 
         return FormatTypeName(type);

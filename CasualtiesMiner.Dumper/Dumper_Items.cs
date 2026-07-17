@@ -100,8 +100,8 @@ public sealed partial class Dumper
             item.usable = GetValue<bool>(itemDict, "usable");
             item.usableOnLimb = GetValue<bool>(itemDict, "usableOnLimb");
             item.rotSpeed = GetValue<float>(itemDict, "rotSpeed");
-            item.useAction = GetValue<string[]>(itemDict, "useAction");
-            item.useLimbAction = GetValue<string[]>(itemDict, "useLimbAction");
+            item.useAction = DelegateParser.Parse(GetValue<string[]>(itemDict, "useAction"));
+            item.useLimbAction = DelegateParser.Parse(GetValue<string[]>(itemDict, "useLimbAction"));
             item.destroyAtZeroCondition = GetValue<bool>(itemDict, "destroyAtZeroCondition");
             item.weight = GetValue<float>(itemDict, "weight");
             item.scaleWeightWithCondition = GetValue<bool>(itemDict, "scaleWeightWithCondition");
@@ -128,15 +128,6 @@ public sealed partial class Dumper
                 min = GetValue(itemDict, "rec", 2)
             };
             item.qualities = ConvertList<CraftingQuality>(GetValue<List<object?>>(itemDict, "qualities"));
-
-            if (item.useAction != null)
-            {
-                DelegateParser.Parse(item.useAction);
-            }
-            if (item.useLimbAction != null)
-            {
-                DelegateParser.Parse(item.useLimbAction);
-            }
 
             itemList.Add(item);
             continue;

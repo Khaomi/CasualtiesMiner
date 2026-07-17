@@ -1,7 +1,8 @@
 ﻿using System.Globalization;
 using System.Text.RegularExpressions;
 using CasualtiesMiner.Dumper.Parsing.Delegates.Operations;
-using static CasualtiesMiner.Dumper.Parsing.Delegates.Operations.NumericEffect.OperationType;
+using CasualtiesMiner.Shared.Models;
+using static CasualtiesMiner.Shared.Models.NumericEffect.OperationType;
 
 namespace CasualtiesMiner.Dumper.Parsing.Delegates;
 
@@ -29,7 +30,10 @@ internal static partial class EffectParser
                     Field = op.Field,
                     Type = type,
                     Value = value,
-                    Holder = holder
+                    Holder = holder,
+                    Condition = op.Condition,
+                    Timer = op.Timer,
+                    Key = $"{op.Holder}_{op.Field}"
                 };
             }
             case MethodCallOperation op:
@@ -38,7 +42,9 @@ internal static partial class EffectParser
                 return new CallEffect
                 {
                     Method = op.Method,
-                    Holder = new Holder.None()
+                    Holder = holder,
+                    Condition = op.Condition,
+                    Timer = op.Timer
                 };
             }
             default:

@@ -27,7 +27,16 @@ internal static class DelegateParser
         Query query = new Query(Language, @"(local_function_statement body: (_) @body)");
         var body = query.Execute(tree.RootNode).Captures.First().Node;
         var operations = ParseBlock(body);
-        return operations.Select(x => EffectParser.FromOperation(x)).ToList();
+        return operations.Select(EffectParser.FromOperation).GroupBy(x => x.Key).SelectMany(x =>
+        {
+            var list = x.ToList();
+            if (x.Key == null || list.Any(y => y is not NumericEffect))
+            {
+                return list;
+            }
+
+            return [list.Aggregate((a, b) => ((NumericEffect)a).MergeWith((NumericEffect)b))];
+        }).ToList();
     }
 
     private static List<Operation> ParseBlock(Node block, Dictionary<Entity, Entity>? variables = null)
@@ -50,7 +59,8 @@ internal static class DelegateParser
             var type = parsed["type"];
             if (type.Text is "float" or "bool")
             {
-                variables[MathParser.CreateVar(parsed["name"].Text)] = MathParser.ToMath(parsed["content"]).Substitute(variables);
+                variables[MathParser.CreateVar(parsed["name"].Text)] =
+                    MathParser.ToMath(parsed["content"]).Substitute(variables);
             }
         }
 
@@ -214,6 +224,7 @@ internal static class DelegateParser
             query = new Query(Language, queryString);
             cachedQueries[queryString] = query;
         }
+
         using var cursor = new QueryCursor();
         ts_query_cursor_set_max_start_depth((IntPtr)queryCursorSelf.GetValue(cursor)!, 0);
         cursor.Execute(query, node);

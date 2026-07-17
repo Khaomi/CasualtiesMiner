@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using AngouriMath;
+using CasualtiesMiner.Shared.Json;
 
 namespace CasualtiesMiner.Dumper.Cli;
 
@@ -18,6 +19,7 @@ internal static class DumperJsonOptions
         DefaultIgnoreCondition = JsonIgnoreCondition.Never,
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+        Converters = { new EntityJsonConverter() }
     };
 }
 

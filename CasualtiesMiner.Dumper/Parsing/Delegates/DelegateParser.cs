@@ -30,8 +30,10 @@ internal static class DelegateParser
         var body = query.Execute(tree.RootNode).Captures.First().Node;
         var operations = ParseBlock(body);
         using var _ = MathS.Settings.DowncastingEnabled.Set(false);
-        return operations.Select(EffectParser.FromOperation)
-            .GroupBy(x => x.Condition != null || x.Timer != null ? null : x.Key).SelectMany(x =>
+        return operations.SelectMany(EffectParser.FromOperation)
+            .GroupBy<Effect, (Holder, string)?>(x =>
+                x.Condition != null || x.Timer != null ? null : x is NumericEffect n ? (n.Holder, n.Field) : null)
+            .SelectMany(x =>
             {
                 var list = x.ToList();
                 if (x.Key == null || list.Any(y => y is not NumericEffect))

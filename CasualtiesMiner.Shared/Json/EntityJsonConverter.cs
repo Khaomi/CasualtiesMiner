@@ -14,7 +14,11 @@ public class EntityJsonConverter : JsonConverter<Entity>
     public override void Write(Utf8JsonWriter writer, Entity value, JsonSerializerOptions options)
     {
         writer.WriteStartObject();
-        writer.WriteString("$type", value.GetType().Name);
+        writer.WriteString("$type", value switch
+        {
+            Entity.Number.Real => "real",
+            _ => value.GetType().Name
+        });
 
         switch (value)
         {

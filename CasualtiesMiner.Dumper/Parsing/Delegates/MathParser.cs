@@ -21,7 +21,7 @@ internal static class MathParser
             case "element_access_expression":
             case "string_literal":
             case "interpolated_string_expression":
-                return CreateVar(MathName(node.Text));
+                return CreateVar(node.Text);
             case "integer_literal":
                 return MathS.Numbers.Create(int.Parse(node.Text, CultureInfo.InvariantCulture));
             case "real_literal":
@@ -68,7 +68,7 @@ internal static class MathParser
                 var func = node.NamedChildren[0].Text;
                 var args = node.NamedChildren[1].NamedChildren.Select(x =>
                     ToMath(x.Children.Count > 1 ? FindIdentifier(x)! : x.Children[0]));
-                return MathS.Apply(CreateVar(MathName(func)), args.ToArray());
+                return MathS.Apply(CreateVar(func), args.ToArray());
             case "parenthesized_expression":
                 return ToMath(node.NamedChildren[0]);
             case "conditional_expression":
@@ -86,11 +86,6 @@ internal static class MathParser
             default:
                 throw new Exception($"Unknown identifier of type {node.Type}: {node.Text}");
         }
-    }
-
-    private static string MathName(string name)
-    {
-        return name; //.Replace('.', '_').Replace('(', '_').Replace(')', '_');
     }
 
     private static Node? FindIdentifier(Node node)

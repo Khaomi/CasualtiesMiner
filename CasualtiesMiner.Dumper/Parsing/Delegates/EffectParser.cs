@@ -8,7 +8,7 @@ namespace CasualtiesMiner.Dumper.Parsing.Delegates;
 
 internal static partial class EffectParser
 {
-    public static Effect FromOperation(Operation operation)
+    public static List<Effect> FromOperation(Operation operation)
     {
         switch (operation)
         {
@@ -19,33 +19,91 @@ internal static partial class EffectParser
                 {
                     "+=" => (Add, op.Value),
                     "-=" => (Add, -op.Value),
-                    "*=" => (Multiply, -op.Value),
+                    "*=" => (Multiply, op.Value),
                     "/=" => (Multiply, 1 / op.Value),
                     "=" => (Set, op.Value),
                     _ => throw new Exception($"Unknown operator {op.Operator}")
                 };
 
-                return new NumericEffect
-                {
-                    Field = op.Field,
-                    Type = type,
-                    Value = value,
-                    Holder = holder,
-                    Condition = op.Condition,
-                    Timer = op.Timer,
-                    Key = $"{op.Holder}_{op.Field}"
-                };
+                return
+                [
+                    new NumericEffect
+                    {
+                        Field = op.Field,
+                        Type = type,
+                        Value = value,
+                        Holder = holder,
+                        Condition = op.Condition,
+                        Timer = op.Timer
+                    }
+                ];
             }
             case MethodCallOperation op:
             {
                 var holder = ParseRawHolder(op.Holder, op.Method);
-                return new CallEffect
+                switch (holder)
                 {
-                    Method = op.Method,
-                    Holder = holder,
-                    Condition = op.Condition,
-                    Timer = op.Timer
-                };
+                    case Holder.Body when op.Method == "Drink":
+                        return
+                        [
+                            new NumericEffect
+                            {
+                                Field = "thirst",
+                                Holder = holder,
+                                Value = op.Arguments[0],
+                                Type = Add,
+                                Condition = op.Condition,
+                                Timer = op.Timer
+                            }
+                        ];
+                    case Holder.Body when op.Method == "Eat":
+                        return
+                        [
+                            new NumericEffect
+                            {
+                                Field = "hunger",
+                                Holder = holder,
+                                Value = op.Arguments[0],
+                                Type = Add,
+                                Condition = op.Condition,
+                                Timer = op.Timer
+                            },
+                            new NumericEffect
+                            {
+                                Field = "weightOffset",
+                                Holder = holder,
+                                Value = op.Arguments[1],
+                                Type = Add,
+                                Condition = op.Condition,
+                                Timer = op.Timer
+                            }
+                        ];
+                    case var _ when op.Method == "SetDisinfect":
+                        return
+                        [
+                            new NumericEffect
+                            {
+                                Field = "disinfect",
+                                Holder = new Holder.Body(),
+                                Value = op.Arguments[0],
+                                Type = Set,
+                                Condition = op.Condition,
+                                Timer = op.Timer
+                            }
+                        ];
+                }
+
+                return
+                [
+                    new CallEffect
+                    {
+                        Method = op.Method,
+                        Holder = holder,
+                        Condition = op.Condition,
+                        Timer = op.Timer,
+                        Arguments = op.Arguments
+                    }
+                ];
             }
             default:
                 throw new ArgumentOutOfRangeException(nameof(operation));
@@ -83,10 +141,12 @@ internal static partial class EffectParser
         {
             return new Holder.Battery();
         }
+
         if (raw == "body.vomiter")
         {
             return new Holder.Vomiter();
         }
+
         if (raw.Contains("Component<Talker>()") || raw == "body.talker")
         {
             return new Holder.Talker();
@@ -97,11 +157,13 @@ internal static partial class EffectParser
         {
             return new Holder.Painkillers();
         }
-        if (raw.Contains("Component<WaterContainerItem>()") )
+
+        if (raw.Contains("Component<WaterContainerItem>()"))
         {
             return new Holder.WaterContainerItem();
         }
-        if (raw.Contains("Component<Antidepressants>(body)") )
+
+        if (raw.Contains("Component<Antidepressants>(body)"))
         {
             return new Holder.Antidepressants();
         }

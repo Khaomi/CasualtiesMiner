@@ -9,14 +9,9 @@ namespace CasualtiesMiner.Shared.Models;
 [JsonDerivedType(typeof(CallEffect), "call")]
 public abstract class Effect
 {
-    [JsonIgnore]
-    public string? Key { get; set; }
-
-    [JsonConverter(typeof(EntityJsonConverter))]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public Entity? Condition { get; set; }
 
-    [JsonConverter(typeof(EntityJsonConverter))]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public Entity? Timer { get; set; }
 }
@@ -26,8 +21,8 @@ public class NumericEffect : Effect
     public required string Field { get; set; }
     public required Holder Holder { get; set; }
 
-    [JsonConverter(typeof(EntityJsonConverter))]
     public required Entity Value { get; set; }
+
     public required OperationType Type { get; set; }
 
     public enum OperationType
@@ -80,4 +75,6 @@ public class CallEffect : Effect
 {
     public required string Method { get; set; }
     public required Holder Holder { get; set; }
+
+    public List<Entity> Arguments { get; set; } = [];
 }

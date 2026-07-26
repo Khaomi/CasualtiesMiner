@@ -1,0 +1,11 @@
+{
+  "liquid_id":          { "type": "TEXT" },
+  "locale_name":        { "type": "TEXT" },
+  "color":              { "type": "TEXT" },
+  "value_per_liter":    { "type": "DOUBLE" },
+  "health_usable":      { "type": "BOOLEAN" },
+  "injectable":         { "type": "BOOLEAN" },
+  "locale_from_item":   { "type": "BOOLEAN" },
+  "injection_sickness": { "type": "DOUBLE" },
+  "qualities":          { "type": "TEXT", "repeated": true }
+}

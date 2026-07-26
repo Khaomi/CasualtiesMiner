@@ -1,0 +1,13 @@
+{
+  "locale_id":               { "type": "TEXT" },
+  "icon":                    { "type": "TEXT" },
+  "icon_src_size":           { "type": "INTEGER", "index": false },
+  "desc_locale_key":         { "type": "TEXT", "index": false },
+  "precondition_for_moodle": { "type": "TEXT", "index": false },
+  "precondition_display":    { "type": "TEXT", "index": false },
+  "intensity":               { "type": "INTEGER", "index": false },
+  "intensity_body_field_id": { "type": "TEXT", "index": false },
+  "critical":                { "type": "BOOLEAN" },
+  "critical_expr":           { "type": "TEXT", "index": false },
+  "chipped_only":            { "type": "BOOLEAN" }
+}

@@ -1,0 +1,4 @@
+{
+  "game_field_id": { "type": "TEXT" },
+  "value":         { "type": "DOUBLE" }
+}

@@ -9,26 +9,13 @@ namespace CasualtiesMiner.Uploader.Wiki;
 internal static partial class WikiGenerator
 {
     public static string BuildItemDataModule(IReadOnlyList<ItemRow> rows)
-    {
-        var sb = new StringBuilder();
-        sb.AppendLine(GeneratedHeader);
-        sb.AppendLine("return {");
-
-        foreach (var row in rows)
-        {
-            sb.AppendLine("  {");
-
-            foreach (var (key, value) in EnumerateItemFields(row))
-            {
-                sb.Append("    ").Append(key).Append(" = ").Append(value).AppendLine(",");
-            }
-
-            sb.AppendLine("  },");
-        }
-
-        sb.AppendLine("}");
-        return sb.ToString();
-    }
+        => BuildTableDataModule(rows, EnumerateItemFields);
+    
+    public static string BuildItemBatteryDataModule(IReadOnlyList<ItemRow> rows)
+        => BuildTableDataModule(rows.Where(x => x.Subtype == "battery"), EnumerateItemBatteryFields);
+    
+    public static string BuildItemLiquidDataModule(IReadOnlyList<ItemRow> rows)
+        => BuildTableDataModule(rows.Where(x => x.Subtype == "liquid"), EnumerateItemLiquidFields);
 
     private static IEnumerable<(string Key, string Value)> EnumerateItemFields(ItemRow row)
     {
@@ -76,5 +63,19 @@ internal static partial class WikiGenerator
         {
             yield return ("max_charge", LuaFormat.Num(row.MaxCharge));
         }
+    }
+    
+    private static IEnumerable<(string Key, string Value)> EnumerateItemBatteryFields(ItemRow row)
+    {
+        yield return ("item_id", LuaFormat.String(row.ItemId));
+        yield return ("max_charge", LuaFormat.Num(row.MaxCharge));
+    }
+    
+    private static IEnumerable<(string Key, string Value)> EnumerateItemLiquidFields(ItemRow row)
+    {
+        yield return ("item_id", LuaFormat.String(row.ItemId));
+        yield return ("capacity", LuaFormat.Num(row.Capacity));
+        yield return ("auto_fill", LuaFormat.Bool(row.AutoFill));
+        yield return ("default_contents", LuaList(row.DefaultContents));
     }
 }

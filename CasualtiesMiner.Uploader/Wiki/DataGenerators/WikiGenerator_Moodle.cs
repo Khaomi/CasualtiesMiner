@@ -9,26 +9,7 @@ namespace CasualtiesMiner.Uploader.Wiki;
 internal static partial class WikiGenerator
 {
     public static string BuildMoodleDataModule(IReadOnlyList<MoodleRow> rows)
-    {
-        var sb = new StringBuilder();
-        sb.AppendLine(GeneratedHeader);
-        sb.AppendLine("return {");
-
-        foreach (var row in rows)
-        {
-            sb.AppendLine("  {");
-
-            foreach (var (key, value) in EnumerateMoodleFields(row))
-            {
-                sb.Append("    ").Append(key).Append(" = ").Append(value).AppendLine(",");
-            }
-
-            sb.AppendLine("  },");
-        }
-
-        sb.AppendLine("}");
-        return sb.ToString();
-    }
+        => BuildTableDataModule(rows, EnumerateMoodleFields);
 
     private static IEnumerable<(string Key, string Value)> EnumerateMoodleFields(MoodleRow row)
     {

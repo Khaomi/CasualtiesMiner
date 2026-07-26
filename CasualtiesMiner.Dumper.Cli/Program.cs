@@ -98,6 +98,6 @@ public class Program
         };
 
         await File.WriteAllTextAsync("data.json",
-            JsonSerializer.Serialize(dumpedData, DumperJsonOptions.Default));
+            JsonSerializer.Serialize(dumpedData, DumpedData.SerializationOptions));
     }
 }

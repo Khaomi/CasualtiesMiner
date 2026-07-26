@@ -1,0 +1,11 @@
+{
+  "name":         { "type": "TEXT" },
+  "health":       { "type": "DOUBLE" },
+  "toxicity":     { "type": "DOUBLE" },
+  "hitsound":     { "type": "TEXT" },
+  "stepsound":    { "type": "TEXT" },
+  "no_variation": { "type": "BOOLEAN" },
+  "metallic":     { "type": "BOOLEAN" },
+  "slippery":     { "type": "BOOLEAN" },
+  "sleep":        { "type": "TEXT" }
+}

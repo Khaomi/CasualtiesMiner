@@ -9,4 +9,9 @@
     <ItemGroup>
         <ProjectReference Include="..\CasualtiesMiner.Shared\CasualtiesMiner.Shared.csproj" />
     </ItemGroup>
+    
+    <ItemGroup>
+        <EmbeddedResource Include="BucketSchemas/*.json" 
+                          LogicalName="BucketSchemas/%(Filename)%(Extension)"/>
+    </ItemGroup>
 </Project>

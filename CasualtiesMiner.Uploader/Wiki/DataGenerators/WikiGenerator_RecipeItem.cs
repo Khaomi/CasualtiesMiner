@@ -9,26 +9,7 @@ namespace CasualtiesMiner.Uploader.Wiki;
 internal static partial class WikiGenerator
 {
     public static string BuildRecipeItemDataModule(IReadOnlyList<RecipeItemRow> rows)
-    {
-        var sb = new StringBuilder();
-        sb.AppendLine(GeneratedHeader);
-        sb.AppendLine("return {");
-
-        foreach (var row in rows)
-        {
-            sb.AppendLine("  {");
-
-            foreach (var (key, value) in EnumerateRecipeItemFields(row))
-            {
-                sb.Append("    ").Append(key).Append(" = ").Append(value).AppendLine(",");
-            }
-
-            sb.AppendLine("  },");
-        }
-
-        sb.AppendLine("}");
-        return sb.ToString();
-    }
+        => BuildTableDataModule(rows, EnumerateRecipeItemFields);
 
     private static IEnumerable<(string Key, string Value)> EnumerateRecipeItemFields(RecipeItemRow row)
     {

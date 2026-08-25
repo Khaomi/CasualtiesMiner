@@ -5,7 +5,7 @@ namespace CasualtiesMiner.Uploader.Data.Locale;
 internal sealed class LocaleCatalog
 {
     public const string DefaultLanguageCode = "EN";
-    public const string DefaultRemoteTag = "v7.0.1";
+    public const string DefaultRemoteTag = "f7b5136f96a0509b4dfbd00bafcf208ef2f17fb8";
 
     private const string RemoteRepo = "orsoniks/scavgame-locale";
 
@@ -231,6 +231,8 @@ internal sealed class LocaleCatalog
         var other = ReadStringDictionary(document.RootElement, "other");
         var moodles = ReadStringDictionary(document.RootElement, "moodles");
         var buildings = ReadStringDictionary(document.RootElement, "buildings");
+        var loreNotes = ReadLoreNotes(document.RootElement, "notes");
+        var pda = ReadPda(document.RootElement, "pdaNotes");
 
         return new GameLocale
         {
@@ -240,6 +242,8 @@ internal sealed class LocaleCatalog
             Other = other,
             Moodles = moodles,
             Buildings = buildings,
+            LoreNotes = loreNotes,
+            PDA = pda,
         };
     }
 
@@ -254,6 +258,65 @@ internal sealed class LocaleCatalog
         {
             if (entry.Value.ValueKind == JsonValueKind.String)
                 result[entry.Name] = entry.Value.GetString() ?? string.Empty;
+        }
+
+        return result;
+    }
+
+    private static List<Dictionary<string, string>> ReadPda(JsonElement root, string propertyName)
+    {
+        var pdaList = new List<Dictionary<string, string>>();
+
+        if (!root.TryGetProperty(propertyName, out var element) || element.ValueKind != JsonValueKind.Array)
+            return pdaList;
+
+        foreach (var pda in element.EnumerateArray())
+        {
+            var pdaResult = new Dictionary<string, string>();
+            pdaList.Add(pdaResult);
+
+            if (pda.ValueKind == JsonValueKind.Object)
+            {
+                foreach (var entry in pda.EnumerateObject())
+                {
+                    if (entry.Value.ValueKind == JsonValueKind.String)
+                        pdaResult[entry.Name] = entry.Value.GetString() ?? string.Empty;
+                }
+            }
+        }
+        
+        return pdaList;
+    }
+
+    private static List<List<Dictionary<string, string>>> ReadLoreNotes(JsonElement root, string propertyName)
+    {
+        var result = new List<List<Dictionary<string, string>>>();
+
+        if (!root.TryGetProperty(propertyName, out var element) || element.ValueKind != JsonValueKind.Array)
+            return result;
+
+        foreach (var layer in element.EnumerateArray())
+        {
+            var layerResult = new List<Dictionary<string, string>>();
+            result.Add(layerResult);
+            
+            if (layer.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var note in layer.EnumerateArray())
+                {
+                    var notesResult = new Dictionary<string, string>();
+                    layerResult.Add(notesResult);
+
+                    if (note.ValueKind == JsonValueKind.Object)
+                    {
+                        foreach (var entry in note.EnumerateObject())
+                        {
+                            if (entry.Value.ValueKind == JsonValueKind.String)
+                                notesResult[entry.Name] = entry.Value.GetString() ?? string.Empty;
+                        }
+                    }
+                }
+            }
         }
 
         return result;

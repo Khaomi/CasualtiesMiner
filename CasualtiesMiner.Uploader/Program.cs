@@ -138,6 +138,8 @@ public static class Program
                 locale,
                 buildingItems.Select(id => LocaleModuleEntry.Create(id, GameObjectType.Building))));
 
+            await UploadWikiLocale(client, options, locale, "notes", LocaleWikiGenerator.BuildLoreModule(locale));
+            await UploadWikiLocale(client, options, locale, "pdaNotes", LocaleWikiGenerator.BuildPdaModule(locale));
             await UploadWikiLocale(client, options, locale, "ui", LocaleWikiGenerator.BuildUiModule(locale));
         }
     }

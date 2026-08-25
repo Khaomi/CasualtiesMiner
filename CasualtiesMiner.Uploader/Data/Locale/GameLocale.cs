@@ -6,19 +6,22 @@ internal sealed class GameLocale
 
     public required string Code { get; init; }
 
-    public IReadOnlyDictionary<string, string> Main { get; init; } = new Dictionary<string, string>();
-    public IReadOnlyDictionary<string, string> Other { get; init; } = new Dictionary<string, string>();
-    public IReadOnlyDictionary<string, string> Moodles { get; init; } = new Dictionary<string, string>();
-    public IReadOnlyDictionary<string, string> Buildings { get; init; } = new Dictionary<string, string>();
+    public required IReadOnlyDictionary<string, string> Main { get; init; }
+    public required IReadOnlyDictionary<string, string> Other { get; init; }
+    public required IReadOnlyDictionary<string, string> Moodles { get; init; }
+    public required IReadOnlyDictionary<string, string> Buildings { get; init; }
+    public required IReadOnlyList<IReadOnlyList<IDictionary<string, string>>> LoreNotes { get; init; }
+    public required IReadOnlyList<IDictionary<string, string>> PDA { get; init; }
 
-    public string GetObjectName(string id)
+
+    public string GetObjectName(string id, string fallback)
     {
-        return Main.TryGetValue(id, out var name) && !string.IsNullOrWhiteSpace(name) ? name : id;
+        return Main.TryGetValue(id, out var name) && !string.IsNullOrWhiteSpace(name) ? name : fallback;
     }
 
-    public string GetObjectDescription(string id)
+    public string GetObjectDescription(string id, string fallback)
     {
-        return Main.TryGetValue(id + "dsc", out var description) ? description : string.Empty;
+        return Main.TryGetValue(id + "dsc", out var description) ? description : fallback;
     }
 
     public string GetMoodles(string key, string fallback)

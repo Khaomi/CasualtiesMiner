@@ -8,5 +8,5 @@ internal enum GameObjectType
     Block,
     Moodle,
     Recipe,
-    Building
+    Building,
 }

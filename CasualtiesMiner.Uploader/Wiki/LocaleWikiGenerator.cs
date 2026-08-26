@@ -73,8 +73,8 @@ internal static class LocaleWikiGenerator
         return entry.Type switch
         {
             GameObjectType.Item => (
-                locale.GetObjectName(entry.LocaleKey),
-                locale.GetObjectDescription(entry.LocaleKey)),
+                locale.GetObjectName(entry.LocaleKey, entry.LocaleKey),
+                locale.GetObjectDescription(entry.LocaleKey, string.Empty)),
             GameObjectType.Block => (
                 locale.GetOther(entry.LocaleKey, fallback),
                 string.Empty),
@@ -89,6 +89,61 @@ internal static class LocaleWikiGenerator
                 locale.GetBuildingsDesc(entry.LocaleKey, fallback)),
             _ => (fallback, fallback),
         };
+    }
+    
+    public static string BuildLoreModule(GameLocale locale)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine(GeneratedHeader);
+        sb.AppendLine("return {");
+
+        foreach (var (layerIndex, layerNotes) in locale.LoreNotes.Index())
+        {
+            foreach (var (noteIndex, note) in layerNotes.Index())
+            {
+                if (!note.TryGetValue("Item1", out var text))
+                    text = "";
+                
+                if (!note.TryGetValue("Item2", out var sprite))
+                    sprite = "";
+                
+                if (!note.TryGetValue("Item3", out var font))
+                    font = "";
+                
+                sb.AppendLine("  {");
+
+                sb.Append("    text = ").Append(LuaFormat.String(text)).AppendLine(",");
+                sb.Append("    sprite = ").Append(LuaFormat.String(sprite)).AppendLine(",");
+                sb.Append("    font = ").Append(LuaFormat.String(font)).AppendLine(",");
+                sb.Append("    layer_index = ").Append(LuaFormat.Int(layerIndex)).AppendLine(",");
+                sb.Append("    note_index = ").Append(LuaFormat.Int(noteIndex)).AppendLine(",");
+                
+                sb.AppendLine("  },");
+            }
+        }
+
+        sb.AppendLine("}");
+        return sb.ToString();
+    }
+
+    public static string BuildPdaModule(GameLocale locale)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine(GeneratedHeader);
+        sb.AppendLine("return {");
+
+        foreach (var pda in locale.PDA)
+        {
+            if (!pda.TryGetValue("Item1", out var text))
+                text = "";
+                
+            sb.AppendLine("  {");
+            sb.Append("    text = ").Append(LuaFormat.String(text)).AppendLine(",");
+            sb.AppendLine("  },");
+        }
+
+        sb.AppendLine("}");
+        return sb.ToString();
     }
 
     public static string BuildUiModule(GameLocale locale)

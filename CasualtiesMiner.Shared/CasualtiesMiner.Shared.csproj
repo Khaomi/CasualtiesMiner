@@ -16,4 +16,9 @@
             <Private>false</Private>
         </Reference>
     </ItemGroup>
+
+    <ItemGroup Condition="!Exists('..\libs\Assembly-CSharp.dll')">
+        <!-- This needs to be private because otherwise projects will reference the Gamelibs themselves instead of the source-generated doubles -->
+        <PackageReference Include="CasualtiesUnknown.GameLibs.Steam" Version="7.0.1-ngd.0" PrivateAssets="All"/>
+    </ItemGroup>
 </Project>

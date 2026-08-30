@@ -252,12 +252,22 @@ internal sealed class LocaleCatalog
         var result = new Dictionary<string, string>(StringComparer.Ordinal);
 
         if (!root.TryGetProperty(propertyName, out var element) || element.ValueKind != JsonValueKind.Object)
+        {
+            Console.WriteLine($"Warn: locale property {propertyName} could not be read correctly!");
             return result;
+        }
 
         foreach (var entry in element.EnumerateObject())
         {
+            string? value = null;
+            
             if (entry.Value.ValueKind == JsonValueKind.String)
-                result[entry.Name] = entry.Value.GetString() ?? string.Empty;
+                value = entry.Value.GetString();
+
+            if (value != null)
+                result[entry.Name] = value;
+            else
+                Console.WriteLine($"Warn: locale property {propertyName}.{entry.Name} could not be read correctly!");
         }
 
         return result;
@@ -268,9 +278,12 @@ internal sealed class LocaleCatalog
         var pdaList = new List<Dictionary<string, string>>();
 
         if (!root.TryGetProperty(propertyName, out var element) || element.ValueKind != JsonValueKind.Array)
+        {
+            Console.WriteLine($"Warn: locale property {propertyName} could not be read correctly!");
             return pdaList;
+        }
 
-        foreach (var pda in element.EnumerateArray())
+        foreach (var (index, pda) in element.EnumerateArray().Index())
         {
             var pdaResult = new Dictionary<string, string>();
             pdaList.Add(pdaResult);
@@ -279,9 +292,20 @@ internal sealed class LocaleCatalog
             {
                 foreach (var entry in pda.EnumerateObject())
                 {
+                    string? value = null;
+            
                     if (entry.Value.ValueKind == JsonValueKind.String)
-                        pdaResult[entry.Name] = entry.Value.GetString() ?? string.Empty;
+                        value = entry.Value.GetString();
+
+                    if (value != null)
+                        pdaResult[entry.Name] = value;
+                    else
+                        Console.WriteLine($"Warn: locale property {propertyName}.{index}.{entry.Name} could not be read correctly!");
                 }
+            }
+            else
+            {
+                Console.WriteLine($"Warn: locale property {propertyName}.{index} could not be read correctly!");
             }
         }
         
@@ -293,16 +317,19 @@ internal sealed class LocaleCatalog
         var result = new List<List<Dictionary<string, string>>>();
 
         if (!root.TryGetProperty(propertyName, out var element) || element.ValueKind != JsonValueKind.Array)
+        {
+            Console.WriteLine($"Warn: locale property {propertyName} could not be read correctly!");
             return result;
+        }
 
-        foreach (var layer in element.EnumerateArray())
+        foreach (var (layerIndex, layer) in element.EnumerateArray().Index())
         {
             var layerResult = new List<Dictionary<string, string>>();
             result.Add(layerResult);
             
             if (layer.ValueKind == JsonValueKind.Array)
             {
-                foreach (var note in layer.EnumerateArray())
+                foreach (var (noteIndex, note) in layer.EnumerateArray().Index())
                 {
                     var notesResult = new Dictionary<string, string>();
                     layerResult.Add(notesResult);
@@ -311,11 +338,27 @@ internal sealed class LocaleCatalog
                     {
                         foreach (var entry in note.EnumerateObject())
                         {
+                            string? value = null;
+            
                             if (entry.Value.ValueKind == JsonValueKind.String)
-                                notesResult[entry.Name] = entry.Value.GetString() ?? string.Empty;
+                                value = entry.Value.GetString();
+
+                            if (value != null)
+                                notesResult[entry.Name] = value;
+                            else
+                                Console.WriteLine(
+                                    $"Warn: locale property {propertyName}.{layerIndex}.{entry.Name}.{entry.Name} could not be read correctly!");
                         }
                     }
+                    else
+                    {
+                        Console.WriteLine($"Warn: locale property {propertyName}.{layerIndex}.{noteIndex} could not be read correctly!");
+                    }
                 }
+            }
+            else
+            {
+                Console.WriteLine($"Warn: locale property {propertyName}.{layerIndex} could not be read correctly!");
             }
         }
 

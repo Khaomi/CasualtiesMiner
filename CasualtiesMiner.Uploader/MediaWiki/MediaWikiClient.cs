@@ -67,6 +67,11 @@ internal sealed class MediaWikiClient : IDisposable
     /// </summary>
     public async Task<string> EditAsync(string title, string text, string summary, bool dryRun = false)
     {
+        if (title.StartsWith("Bucket:"))
+            text = GetFormattedBucketSchema(text);
+        else
+            text = GetFormattedPage(text);
+        
         var localSha1 = ComputeSha1(text);
         var remoteSha1 = await GetRevisionSha1Async(title);
 
@@ -107,7 +112,7 @@ internal sealed class MediaWikiClient : IDisposable
 
         return document.RootElement.GetProperty("edit").GetProperty("result").GetString() ?? "unknown";
     }
-
+    
     private async Task<string?> GetRevisionSha1Async(string title)
     {
         using var response = await PostAsync(new Dictionary<string, string>
@@ -135,13 +140,10 @@ internal sealed class MediaWikiClient : IDisposable
         if (!page.TryGetProperty("revisions", out var revisions) || revisions.GetArrayLength() == 0)
             return null;
 
-        if (!revisions[0].TryGetProperty("slots", out var slots))
+        if (!revisions[0].TryGetProperty("sha1", out var sha1))
             return null;
 
-        if (!slots.TryGetProperty("main", out var main))
-            return null;
-
-        return main.TryGetProperty("sha1", out var sha1) ? sha1.GetString() : null;
+        return sha1.GetString();
     }
 
     private async Task<string> GetTokenAsync(string type)
@@ -239,6 +241,25 @@ internal sealed class MediaWikiClient : IDisposable
     {
         var hash = SHA1.HashData(Encoding.UTF8.GetBytes(text));
         return Convert.ToHexString(hash).ToLowerInvariant();
+    }
+    
+    private static string GetFormattedPage(string schema)
+    {
+        // Ignores whitespace at the end
+        return schema.TrimEnd();
+    }
+
+    private static string GetFormattedBucketSchema(string schema)
+    {
+        var options = new JsonSerializerOptions()
+        {
+            WriteIndented = true,
+            IndentCharacter = '\t',
+            IndentSize = 1,
+        };
+
+        // Ignores whitespace around the text
+        return JsonSerializer.Serialize(JsonSerializer.Deserialize<JsonDocument>(schema), options).Trim();
     }
 
     public void Dispose()

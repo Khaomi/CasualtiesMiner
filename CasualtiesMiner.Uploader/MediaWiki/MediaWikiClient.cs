@@ -7,6 +7,8 @@ namespace CasualtiesMiner.Uploader.MediaWiki;
 
 internal sealed class MediaWikiClient : IDisposable
 {
+    public const string NoChange = "nochange";
+    public const string DryRun = "dry-run";
     private static readonly TimeSpan DefaultTimeout = TimeSpan.FromMinutes(5);
 
     private readonly string _apiUrl;
@@ -65,7 +67,7 @@ internal sealed class MediaWikiClient : IDisposable
     /// Creates or replaces a page. Skips the write when the revision SHA1 already matches.
     /// Returns the resulting edit status (<c>"nochange"</c>, <c>"Success"</c>, or <c>"dry-run"</c>).
     /// </summary>
-    public async Task<string> EditAsync(string title, string text, string summary, bool dryRun = false)
+    public async Task<string> EditAsync(string title, string text, string summary, bool dryRun = false, bool forceUpload = false)
     {
         if (title.StartsWith("Bucket:"))
             text = GetFormattedBucketSchema(text);
@@ -75,8 +77,8 @@ internal sealed class MediaWikiClient : IDisposable
         var localSha1 = ComputeSha1(text);
         var remoteSha1 = await GetRevisionSha1Async(title);
 
-        if (string.Equals(localSha1, remoteSha1, StringComparison.OrdinalIgnoreCase))
-            return "nochange";
+        if (string.Equals(localSha1, remoteSha1, StringComparison.OrdinalIgnoreCase) && !forceUpload)
+            return NoChange;
 
         if (dryRun)
         {
@@ -90,7 +92,7 @@ internal sealed class MediaWikiClient : IDisposable
             await writer.WriteLineAsync(summary);
             await writer.WriteLineAsync("=== Contents ===");
             await writer.WriteLineAsync(text);
-            return "dry-run";
+            return DryRun;
         }
 
         if (_csrfToken is null)

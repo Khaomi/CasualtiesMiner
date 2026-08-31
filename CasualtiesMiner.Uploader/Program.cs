@@ -208,12 +208,15 @@ public static class Program
             $"Regenerate {moduleBaseName} module data",
             options.DryRun);
         Console.WriteLine($"  {dataModuleTitle}: {data}");
+
+        bool shouldUploadTrigger = data != MediaWikiClient.NoChange;
         
         var trigger = await client.EditAsync(
             triggerPageTitle,
             WikiContent.MakeTriggerPage(dataModuleTitle, targetBucket),
             $"Refresh {moduleBaseName} Bucket data",
-            options.DryRun);
+            options.DryRun,
+            forceUpload: shouldUploadTrigger);
         Console.WriteLine($"  {triggerPageTitle}: {trigger}");
     }
 

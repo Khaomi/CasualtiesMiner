@@ -56,4 +56,12 @@ internal sealed record ItemRow
 
     // BatteryInfo
     public double MaxCharge { get; init; }
+    
+    // Container
+    public bool IsContainer { get; init; }
+    public double MaxWeight { get; init; }
+    public double MaxWeightPerItem { get; init; }
+    public double EncumberanceMult { get; init; }
+    public bool ItemsVisible { get; init; }
+    public IReadOnlyList<string> TagRestriction { get; init; } = [];
 }

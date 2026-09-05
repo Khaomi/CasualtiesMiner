@@ -29,6 +29,8 @@ internal static class ItemRowMapper
             _ => "base"
         };
 
+        var container = item.containerData;
+
         return new ItemRow
         {
             ItemId = id,
@@ -74,7 +76,14 @@ internal static class ItemRowMapper
             AutoFill = (item as LiquidItemInfo)?.autoFill ?? false,
             DefaultContents = MapLiquidStacks((item as LiquidItemInfo)?.defaultContents),
 
-            MaxCharge = (item as BatteryInfo)?.maxCharge ?? 0
+            MaxCharge = (item as BatteryInfo)?.maxCharge ?? 0,
+            
+            IsContainer = container != null,
+            MaxWeight = (double)(decimal)(container?.maxWeight ?? 0),
+            MaxWeightPerItem = (double)(decimal)(container?.maxWeightPerItem ?? 0),
+            EncumberanceMult = (double)(decimal)(container?.encumberanceMult ?? 0),
+            ItemsVisible = container?.itemsVisible ?? false,
+            TagRestriction = container?.tagRestriction ?? []
         };
     }
 

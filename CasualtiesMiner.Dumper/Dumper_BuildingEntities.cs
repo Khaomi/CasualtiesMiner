@@ -8,55 +8,34 @@ public sealed partial class Dumper
 {
     public static BuildingEntity[] DumpBuildingEntities(AssetsParser assetsParser)
     {
-        var byId = new Dictionary<string, BuildingEntity>(StringComparer.Ordinal);
-        var spriteById = new Dictionary<string, string>(StringComparer.Ordinal);
-        var prefabsById = new Dictionary<string, List<string>>(StringComparer.Ordinal);
+        var entityList = new List<BuildingEntity>();
 
-        foreach (var snapshot in assetsParser.ExtractPrefabFields("BuildingEntity"))
+        foreach (var snapshot in assetsParser.ExtractBuildingEntities())
         {
-            var entity = BehaviourMapper.MapBuildingEntity(snapshot.Behaviour);
+            var entity = BehaviourMapper.MapBuildingEntity(snapshot.Behaviour.baseField);
+            
+            // Resources.Load is case insensitive!
+            if (!entity.id.Equals(snapshot.PrefabName, StringComparison.InvariantCultureIgnoreCase))
+            {
+                Console.WriteLine(
+                    $"Warning: BuildingEntity '{entity.id}' does not have the same ID as its prefab, '{snapshot.PrefabName}'. " +
+                    "Will override its ID with the prefab ID.");
+                entity.id = snapshot.PrefabName;
+            }
 
             if (string.IsNullOrWhiteSpace(entity.id))
                 continue;
 
-            prefabsById.TryAdd(entity.id, []);
-            prefabsById[entity.id].Add(snapshot.PrefabName);
+            entity.spriteName = snapshot.SpriteName;
 
-            if (!byId.TryGetValue(entity.id, out var existing))
+            if (string.IsNullOrEmpty(entity.spriteName))
             {
-                entity.spriteName = snapshot.SpriteName;
-                byId[entity.id] = entity;
-
-                if (!string.IsNullOrWhiteSpace(snapshot.SpriteName))
-                {
-                    spriteById[entity.id] = snapshot.SpriteName;
-                }
-
-                continue;
+                Console.WriteLine($"Warning: item '{entity.id}' has an empty sprite.");
             }
-
-            if (!existing.Equals(entity))
-            {
-                Console.WriteLine(
-                    $"Warning: BuildingEntity '{entity.id}' differs between prefabs " +
-                    $"'{prefabsById[entity.id][0]}' and '{snapshot.PrefabName}'. Keeping the first instance.");
-            }
-
-            if (string.IsNullOrWhiteSpace(existing.spriteName) && !string.IsNullOrWhiteSpace(snapshot.SpriteName))
-            {
-                existing.spriteName = snapshot.SpriteName;
-                spriteById[entity.id] = snapshot.SpriteName;
-            }
-            else if (!string.IsNullOrWhiteSpace(snapshot.SpriteName)
-                     && !string.IsNullOrWhiteSpace(existing.spriteName)
-                     && !string.Equals(existing.spriteName, snapshot.SpriteName, StringComparison.Ordinal))
-            {
-                Console.WriteLine(
-                    $"Warning: BuildingEntity '{entity.id}' sprite mismatch: prefab '{snapshot.PrefabName}' " +
-                    $"has '{snapshot.SpriteName}', already have '{existing.spriteName}'.");
-            }
+            
+            entityList.Add(entity);
         }
 
-        return [.. byId.Values.OrderBy(x => x.id, StringComparer.Ordinal)];
+        return entityList.ToArray();
     }
 }

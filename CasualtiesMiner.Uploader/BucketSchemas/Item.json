@@ -30,5 +30,6 @@
   "wearable_isolation":          { "type": "DOUBLE" },
   "wear_hit_dur_loss_mult":      { "type": "DOUBLE", "index": false },
   "jump_height_mult_change":     { "type": "DOUBLE", "index": false },
-  "wearable_visual_offset":      { "type": "INTEGER", "index": false }
+  "wearable_visual_offset":      { "type": "INTEGER", "index": false },
+  "is_container":                { "type": "BOOLEAN" }
 }

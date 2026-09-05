@@ -16,6 +16,9 @@ internal static partial class WikiGenerator
     
     public static string BuildItemLiquidDataModule(IReadOnlyList<ItemRow> rows)
         => BuildTableDataModule(rows.Where(x => x.Subtype == "liquid"), EnumerateItemLiquidFields);
+    
+    public static string BuildItemContainerModule(IReadOnlyList<ItemRow> rows)
+        => BuildTableDataModule(rows.Where(x => x.IsContainer), EnumerateContainerFields);
 
     private static IEnumerable<(string Key, string Value)> EnumerateItemFields(ItemRow row)
     {
@@ -51,18 +54,9 @@ internal static partial class WikiGenerator
         yield return ("wearable_visual_offset", LuaFormat.Int(row.WearableVisualOffset));
         yield return ("tags", LuaList(row.Tags));
         yield return ("qualities", LuaList(row.Qualities));
-
-        if (row.Subtype == "liquid")
-        {
-            yield return ("capacity", LuaFormat.Num(row.Capacity));
-            yield return ("auto_fill", LuaFormat.Bool(row.AutoFill));
-            yield return ("default_contents", LuaList(row.DefaultContents));
-        }
-
-        if (row.Subtype == "battery")
-        {
-            yield return ("max_charge", LuaFormat.Num(row.MaxCharge));
-        }
+        
+        // Indicates that there is info in the container table
+        yield return ("is_container", LuaFormat.Bool(row.IsContainer));
     }
     
     private static IEnumerable<(string Key, string Value)> EnumerateItemBatteryFields(ItemRow row)
@@ -77,5 +71,15 @@ internal static partial class WikiGenerator
         yield return ("capacity", LuaFormat.Num(row.Capacity));
         yield return ("auto_fill", LuaFormat.Bool(row.AutoFill));
         yield return ("default_contents", LuaList(row.DefaultContents));
+    }
+    
+    private static IEnumerable<(string Key, string Value)> EnumerateContainerFields(ItemRow row)
+    {
+        yield return ("item_id", LuaFormat.String(row.ItemId));
+        yield return ("max_weight", LuaFormat.Num(row.MaxWeight));
+        yield return ("max_weight_per_item", LuaFormat.Num(row.MaxWeightPerItem));
+        yield return ("encumberance_mult", LuaFormat.Num(row.EncumberanceMult));
+        yield return ("items_visible", LuaFormat.Bool(row.ItemsVisible));
+        yield return ("tag_restriction", LuaList(row.TagRestriction));
     }
 }

@@ -77,9 +77,6 @@ internal sealed class MediaWikiClient : IDisposable
         var localSha1 = ComputeSha1(text);
         var remoteSha1 = await GetRevisionSha1Async(title);
 
-        if (string.Equals(localSha1, remoteSha1, StringComparison.OrdinalIgnoreCase) && !forceUpload)
-            return NoChange;
-
         if (dryRun)
         {
             var sanitizedTitle = Path.GetInvalidFileNameChars().Aggregate(title, (current, ch) => current.Replace(ch, '_'));
@@ -92,8 +89,13 @@ internal sealed class MediaWikiClient : IDisposable
             await writer.WriteLineAsync(summary);
             await writer.WriteLineAsync("=== Contents ===");
             await writer.WriteLineAsync(text);
-            return DryRun;
         }
+
+        if (string.Equals(localSha1, remoteSha1, StringComparison.OrdinalIgnoreCase) && !forceUpload)
+            return NoChange;
+        
+        if (dryRun)
+            return DryRun;
 
         if (_csrfToken is null)
             throw new InvalidOperationException("Not logged in: call LoginAsync first.");

@@ -154,13 +154,14 @@ public static class Program
         List<(string ModuleName, string TargetBucket, string ModuleData)> wikiContents =
         [
             ("Item", "Item", WikiGenerator.BuildItemDataModule(dataRows.Items)),
-            ("ItemBattery", "Item battery", WikiGenerator.BuildItemBatteryDataModule(dataRows.Items)),
-            ("ItemLiquid", "Item liquid", WikiGenerator.BuildItemLiquidDataModule(dataRows.Items)),
+            ("ItemBattery", "Item_battery", WikiGenerator.BuildItemBatteryDataModule(dataRows.Items)),
+            ("ItemLiquid", "Item_liquid", WikiGenerator.BuildItemLiquidDataModule(dataRows.Items)),
+            ("ItemContainer", "Item_container", WikiGenerator.BuildItemContainerModule(dataRows.Items)),
             ("Liquid", "Liquid", WikiGenerator.BuildLiquidDataModule(dataRows.Liquids)),
             ("Block", "Block", WikiGenerator.BuildBlockDataModule(dataRows.Tiles)),
             ("Recipe", "Recipe", WikiGenerator.BuildRecipeDataModule(dataRows.Recipes)),
-            ("RecipeItem", "Recipe ingridient", WikiGenerator.BuildRecipeItemDataModule(dataRows.RecipeItems)),
-            ("RecipeResult", "Recipe result", WikiGenerator.BuildRecipeResultDataModule(dataRows.RecipeResults)),
+            ("RecipeItem", "Recipe_ingridient", WikiGenerator.BuildRecipeItemDataModule(dataRows.RecipeItems)),
+            ("RecipeResult", "Recipe_result", WikiGenerator.BuildRecipeResultDataModule(dataRows.RecipeResults)),
             ("Moodle", "Moodle", WikiGenerator.BuildMoodleDataModule(dataRows.Moodles)),
             ("Building", "Building", WikiGenerator.BuildBuildingDataModule(dataRows.BuildingEntities)),
             ("GameField", "Gamefield", WikiGenerator.BuildGameFieldDataModule(dataRows.GameFields)),

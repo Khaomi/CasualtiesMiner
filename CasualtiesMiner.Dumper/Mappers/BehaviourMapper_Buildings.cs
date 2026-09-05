@@ -38,4 +38,16 @@ public static partial class BehaviourMapper
             metallic = baseField["metallic"].AsBool,
         };
     }
+    
+    public static Container MapContainer(AssetTypeValueField baseField)
+    {
+        return new Container()
+        {
+            encumberanceMult = baseField["encumberanceMult"].AsFloat,
+            itemsVisible = baseField["itemsVisible"].AsBool,
+            maxWeight = baseField["maxWeight"].AsFloat,
+            maxWeightPerItem = baseField["maxWeightPerItem"].AsFloat,
+            tagRestriction = baseField["tagRestriction.Array"].Select(x => x.AsString).ToArray()
+        };
+    }
 }

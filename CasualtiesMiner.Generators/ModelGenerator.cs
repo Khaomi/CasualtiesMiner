@@ -18,6 +18,7 @@ public sealed class ModelGenerator : IIncrementalGenerator
         "ItemInfo",
         "BlockInfo",
         "LiquidType",
+        "Container",
         "TileInfo",
         "LiquidInfo",
         "LiquidItemInfo",

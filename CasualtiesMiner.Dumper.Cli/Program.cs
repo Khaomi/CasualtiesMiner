@@ -53,8 +53,6 @@ public class Program
 
         using var assets = new AssetsParser(Path.GetDirectoryName(Path.GetDirectoryName(assemblyPath))!);
 
-        assets.LoadResources();
-
         // TODO: AssetsTools.NET thread safety?
         buildings = Dumper.DumpBuildingEntities(assets);
 
@@ -99,5 +97,7 @@ public class Program
 
         await File.WriteAllTextAsync("data.json",
             JsonSerializer.Serialize(dumpedData, DumpedData.SerializationOptions));
+        
+        Console.WriteLine($"Done.");
     }
 }

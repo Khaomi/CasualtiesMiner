@@ -88,7 +88,7 @@ internal sealed class MediaWikiClient : IDisposable
             await writer.WriteLineAsync("=== Summary ===");
             await writer.WriteLineAsync(summary);
             await writer.WriteLineAsync("=== Contents ===");
-            await writer.WriteLineAsync(text);
+            await writer.WriteAsync(text);
         }
 
         if (string.Equals(localSha1, remoteSha1, StringComparison.OrdinalIgnoreCase) && !forceUpload)

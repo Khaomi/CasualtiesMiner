@@ -36,6 +36,7 @@ public sealed partial class CraftingQuality : IEquatable<CraftingQuality>
 }
 
 public partial class Container;
+public partial class GunScript;
 
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "$type")]
 [JsonDerivedType(typeof(ItemInfo), "base")]
@@ -46,6 +47,7 @@ public partial class ItemInfo : IEquatable<ItemInfo>
     public string spriteName;
 
     public Container? containerData;
+    public GunScript? gunScriptData;
 
     [SetsRequiredMembers]
     public ItemInfo()

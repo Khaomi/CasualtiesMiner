@@ -20,6 +20,9 @@ internal static partial class WikiGenerator
     public static string BuildItemContainerModule(IReadOnlyList<ItemRow> rows)
         => BuildTableDataModule(rows.Where(x => x.IsContainer), EnumerateContainerFields);
 
+    public static string BuildItemGunModule(IReadOnlyList<ItemRow> rows)
+        => BuildTableDataModule(rows.Where(x => x.IsGun), EnumerateGunFields);
+
     private static IEnumerable<(string Key, string Value)> EnumerateItemFields(ItemRow row)
     {
         yield return ("item_id", LuaFormat.String(row.ItemId));
@@ -57,6 +60,9 @@ internal static partial class WikiGenerator
         
         // Indicates that there is info in the container table
         yield return ("is_container", LuaFormat.Bool(row.IsContainer));
+        
+        // Indicates that there is info in the gun table
+        yield return ("is_gun", LuaFormat.Bool(row.IsGun));
     }
     
     private static IEnumerable<(string Key, string Value)> EnumerateItemBatteryFields(ItemRow row)
@@ -81,5 +87,22 @@ internal static partial class WikiGenerator
         yield return ("encumberance_mult", LuaFormat.Num(row.EncumberanceMult));
         yield return ("items_visible", LuaFormat.Bool(row.ItemsVisible));
         yield return ("tag_restriction", LuaList(row.TagRestriction));
+    }
+    
+    private static IEnumerable<(string Key, string Value)> EnumerateGunFields(ItemRow row)
+    {
+        yield return ("item_id", LuaFormat.String(row.ItemId));
+        yield return ("ammo_type", LuaFormat.String(row.AmmoType));
+        yield return ("firing_mode", LuaFormat.String(row.FiringMode));
+        yield return ("feed_type", LuaFormat.String(row.FeedType));
+        yield return ("mag_capacity", LuaFormat.Int(row.MagCapacity));
+        yield return ("knockback", LuaFormat.Num(row.Knockback));
+        yield return ("structure_damage", LuaFormat.Num(row.StructureDamage));
+        yield return ("animal_damage", LuaFormat.Num(row.AnimalDamage));
+        yield return ("loudness", LuaFormat.Num(row.Loudness));
+        yield return ("desired_gas_time", LuaFormat.Num(row.DesiredGasTime));
+        yield return ("shots_per_fire", LuaFormat.Int(row.ShotsPerFire));
+        yield return ("vertical_spread", LuaFormat.Num(row.VerticalSpread));
+        yield return ("condition_loss_per_shot", LuaFormat.Num(row.ConditionLossPerShot));
     }
 }

@@ -71,7 +71,7 @@ public static class Program
             await UploadSchemasAsync(client, options);
         }
 
-        if (mode is "locales" or "bulk" or "all")
+        if (mode is "locales" or "all")
         {
             await UploadLocalesAsync(client, locales, dataRows, options);
         }
@@ -157,6 +157,7 @@ public static class Program
             ("ItemBattery", "Item_battery", WikiGenerator.BuildItemBatteryDataModule(dataRows.Items)),
             ("ItemLiquid", "Item_liquid", WikiGenerator.BuildItemLiquidDataModule(dataRows.Items)),
             ("ItemContainer", "Item_container", WikiGenerator.BuildItemContainerModule(dataRows.Items)),
+            ("ItemGun", "Item_gun", WikiGenerator.BuildItemGunModule(dataRows.Items)),
             ("Liquid", "Liquid", WikiGenerator.BuildLiquidDataModule(dataRows.Liquids)),
             ("Block", "Block", WikiGenerator.BuildBlockDataModule(dataRows.Tiles)),
             ("Recipe", "Recipe", WikiGenerator.BuildRecipeDataModule(dataRows.Recipes)),

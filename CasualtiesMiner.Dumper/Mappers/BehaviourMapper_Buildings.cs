@@ -50,4 +50,26 @@ public static partial class BehaviourMapper
             tagRestriction = baseField["tagRestriction.Array"].Select(x => x.AsString).ToArray()
         };
     }
+    
+    public static GunScript MapGunScript(AssetTypeValueField baseField)
+    {
+        return new GunScript()
+        {
+            ammoType = (AmmoType)baseField["ammoType"].AsInt,
+            firingMode = (FiringMode)baseField["firingMode"].AsInt,
+            feedType = (FeedType)baseField["feedType"].AsInt,
+            magCapacity = baseField["magCapacity"].AsInt,
+            knockBack = baseField["knockBack"].AsFloat,
+            // TODO fireSound
+            // TODO customRack
+            // TODO customUnrack
+            structureDamage = baseField["structureDamage"].AsFloat,
+            animalDamage = baseField["animalDamage"].AsFloat,
+            loudness = baseField["loudness"].AsFloat,
+            desiredGasTime = baseField["desiredGasTime"].AsFloat,
+            shotsPerFire = baseField["shotsPerFire"].AsInt,
+            verticalSpread = baseField["verticalSpread"].AsFloat,
+            conditionLossPerShot = baseField["conditionLossPerShot"].AsFloat,
+        };
+    }
 }

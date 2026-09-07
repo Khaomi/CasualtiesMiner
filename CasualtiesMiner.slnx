@@ -4,6 +4,12 @@
         <Platform Name="x64"/>
         <Platform Name="x86"/>
     </Configurations>
+    <Folder Name="/Solution Files/">
+        <File Path=".gitignore"/>
+        <File Path="CasualtiesMiner.Common.props"/>
+        <File Path="LICENSE"/>
+        <File Path="README.md"/>
+    </Folder>
     <Project Path="CasualtiesMiner.Dumper.Cli/CasualtiesMiner.Dumper.Cli.csproj" />
     <Project Path="CasualtiesMiner.Dumper/CasualtiesMiner.Dumper.csproj" />
     <Project Path="CasualtiesMiner.Generators/CasualtiesMiner.Generators.csproj" Id="ca519ea3-7442-4d14-9980-2f4bc23e671c" />

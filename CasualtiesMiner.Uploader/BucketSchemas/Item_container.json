@@ -1,0 +1,8 @@
+{
+  "item_id":             { "type": "TEXT" },
+  "max_weight":          { "type": "DOUBLE" },
+  "max_weight_per_item": { "type": "DOUBLE" },
+  "encumberance_mult":   { "type": "DOUBLE" },
+  "items_visible":       { "type": "BOOLEAN" },
+  "tag_restriction":     { "type": "TEXT", "repeated": true }
+}

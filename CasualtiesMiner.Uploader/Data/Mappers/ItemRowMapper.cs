@@ -29,6 +29,9 @@ internal static class ItemRowMapper
             _ => "base"
         };
 
+        var container = item.containerData;
+        var gun = item.gunScriptData;
+
         return new ItemRow
         {
             ItemId = id,
@@ -74,7 +77,28 @@ internal static class ItemRowMapper
             AutoFill = (item as LiquidItemInfo)?.autoFill ?? false,
             DefaultContents = MapLiquidStacks((item as LiquidItemInfo)?.defaultContents),
 
-            MaxCharge = (item as BatteryInfo)?.maxCharge ?? 0
+            MaxCharge = (item as BatteryInfo)?.maxCharge ?? 0,
+            
+            IsContainer = container != null,
+            MaxWeight = (double)(decimal)(container?.maxWeight ?? 0),
+            MaxWeightPerItem = (double)(decimal)(container?.maxWeightPerItem ?? 0),
+            EncumberanceMult = (double)(decimal)(container?.encumberanceMult ?? 0),
+            ItemsVisible = container?.itemsVisible ?? false,
+            TagRestriction = container?.tagRestriction ?? [],
+            
+            IsGun = gun != null,
+            AmmoType = gun?.ammoType.ToString() ?? "",
+            FiringMode = gun?.firingMode.ToString() ?? "",
+            FeedType = gun?.feedType.ToString() ?? "",
+            MagCapacity = gun?.magCapacity ?? 0,
+            Knockback = (double)(decimal)(gun?.knockBack ?? 0),
+            StructureDamage = (double)(decimal)(gun?.structureDamage ?? 0),
+            AnimalDamage = (double)(decimal)(gun?.animalDamage ?? 0),
+            Loudness = (double)(decimal)(gun?.loudness ?? 0),
+            DesiredGasTime = (double)(decimal)(gun?.desiredGasTime ?? 0),
+            ShotsPerFire = gun?.shotsPerFire ?? 0,
+            VerticalSpread = (double)(decimal)(gun?.verticalSpread ?? 0),
+            ConditionLossPerShot = (double)(decimal)(gun?.conditionLossPerShot ?? 0),
         };
     }
 

@@ -56,4 +56,27 @@ internal sealed record ItemRow
 
     // BatteryInfo
     public double MaxCharge { get; init; }
+    
+    // Container
+    public bool IsContainer { get; init; }
+    public double MaxWeight { get; init; }
+    public double MaxWeightPerItem { get; init; }
+    public double EncumberanceMult { get; init; }
+    public bool ItemsVisible { get; init; }
+    public IReadOnlyList<string> TagRestriction { get; init; } = [];
+    
+    // Gun script
+    public bool IsGun { get; init; }
+    public string AmmoType { get; init; } = string.Empty;
+    public string FiringMode { get; init; } = string.Empty;
+    public string FeedType { get; init; } = string.Empty;
+    public int MagCapacity { get; init; }
+    public double Knockback { get; init; }
+    public double StructureDamage { get; init; }
+    public double AnimalDamage { get; init; }
+    public double Loudness { get; init; }
+    public double DesiredGasTime { get; init; }
+    public int ShotsPerFire { get; init; }
+    public double VerticalSpread { get; init; }
+    public double ConditionLossPerShot { get; init; }
 }

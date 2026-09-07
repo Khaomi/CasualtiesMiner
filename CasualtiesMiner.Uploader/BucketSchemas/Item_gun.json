@@ -1,0 +1,15 @@
+{
+  "item_id":                 { "type": "TEXT" },
+  "ammo_type":               { "type": "TEXT" },
+  "firing_mode":             { "type": "TEXT" },
+  "feed_type":               { "type": "TEXT" },
+  "mag_capacity":            { "type": "INTEGER" },
+  "knockback":               { "type": "DOUBLE" },
+  "structure_damage":        { "type": "DOUBLE" },
+  "animal_damage":           { "type": "DOUBLE" },
+  "loudness":                { "type": "DOUBLE" },
+  "desired_gas_time":        { "type": "DOUBLE" },
+  "shots_per_fire":          { "type": "INTEGER" },
+  "vertical_spread":         { "type": "DOUBLE" },
+  "condition_loss_per_shot": { "type": "DOUBLE" }
+}

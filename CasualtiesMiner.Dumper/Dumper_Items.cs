@@ -1,4 +1,5 @@
 ﻿using CasualtiesMiner.Dumper.Game;
+using CasualtiesMiner.Dumper.Mappers;
 using CasualtiesMiner.Shared.Models;
 using ICSharpCode.Decompiler.CSharp;
 using Mono.Cecil.Cil;
@@ -9,6 +10,8 @@ public sealed partial class Dumper
 {
     public ItemInfo[] DumpItems(CSharpDecompiler decompiler, AssetsParser assetsParser)
     {
+        var itemPrefabs = assetsParser.ExtractItems().ToList();
+        
         var itemList = new List<ItemInfo>();
 
         var itemType = _module.Types.FirstOrDefault(t => t.FullName == "Item");
@@ -58,7 +61,6 @@ public sealed partial class Dumper
             }
 
             var itemName = (string)instructions[i + 1].Operand;
-            var spriteName = assetsParser.ExtractSprite(itemName);
             var itemDict = new Dictionary<string, object?>();
 
             string[] validTypes = ["ItemInfo"];
@@ -93,7 +95,6 @@ public sealed partial class Dumper
                 item = new ItemInfo();
 
             item.fullName = itemName;
-            item.spriteName = spriteName;
             item.category = GetValue<string>(itemDict, "category");
             item.slotRotation = GetValue<float>(itemDict, "slotRotation");
             item.usable = GetValue<bool>(itemDict, "usable");
@@ -127,9 +128,38 @@ public sealed partial class Dumper
                 min = GetValue(itemDict, "rec", 2)
             };
             item.qualities = ConvertList<CraftingQuality>(GetValue<List<object?>>(itemDict, "qualities"));
+            
+            // Fill in data from the prefab
+            var prefab = itemPrefabs.FirstOrDefault(x => x.PrefabName == itemName);
 
+            if (prefab.PrefabName != null)
+            {
+                item.spriteName = prefab.SpriteName;
+
+                if (prefab.Container.info != null)
+                {
+                    item.containerData = BehaviourMapper.MapContainer(prefab.Container.baseField);
+                }
+
+                if (prefab.GunScript.info != null)
+                {
+                    item.gunScriptData = BehaviourMapper.MapGunScript(prefab.GunScript.baseField);
+                }
+
+                if (string.IsNullOrEmpty(item.spriteName))
+                {
+                    Console.WriteLine($"Warning: item '{item.fullName}' has an empty sprite.");
+                }
+            }
+            else
+            {
+                item.spriteName = "";
+                item.containerData = null;
+                item.gunScriptData = null;
+                Console.WriteLine($"Warning: No prefab was found for item '{item.fullName}'.");
+            }
+            
             itemList.Add(item);
-            continue;
 
             static List<T> ConvertList<T>(List<object?>? objects)
             {

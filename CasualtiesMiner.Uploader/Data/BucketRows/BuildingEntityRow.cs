@@ -7,6 +7,7 @@
 public class BuildingEntityRow
 {
     public required string Id { get; init; }
+    public required string LocaleId { get; init; }
     public required string SpriteName { get; init; }
     public required double Health { get; init; }
     public required double DropChanceMultiplier { get; init; }

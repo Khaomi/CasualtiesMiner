@@ -1,5 +1,6 @@
 {
   "building_id":             { "type": "TEXT" },
+  "locale_id":               { "type": "TEXT" },
   "sprite_name":             { "type": "TEXT" },
   "items_drop_on_destroy":   { "type": "TEXT", "repeated": true },
   "health":                  { "type": "DOUBLE" },

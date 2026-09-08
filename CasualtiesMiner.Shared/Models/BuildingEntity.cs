@@ -2,6 +2,7 @@
 
 public sealed partial class BuildingEntity : IEquatable<BuildingEntity>
 {
+    public string? localeId;
     public string? spriteName;
 
     public bool Equals(BuildingEntity? other)

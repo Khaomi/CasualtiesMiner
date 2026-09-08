@@ -20,7 +20,8 @@ public static partial class BehaviourMapper
     {
         return new BuildingEntity
         {
-            id = baseField["id"].AsString,
+            id = "", // Taken from prefab
+            localeId = baseField["id"].AsString, // Usually, but not always coincides with prefab ID
             fullName = baseField["fullName"].AsString, // Requires locale text
             description = baseField["fullName"].AsString, // Requires locale text
             itemsDropOnDestroy = baseField["itemsDropOnDestroy.Array"].Select(MapItemDrop).ToArray(),

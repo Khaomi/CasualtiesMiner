@@ -13,15 +13,7 @@ public sealed partial class Dumper
         foreach (var snapshot in assetsParser.ExtractBuildingEntities())
         {
             var entity = BehaviourMapper.MapBuildingEntity(snapshot.Behaviour.baseField);
-            
-            // Resources.Load is case insensitive!
-            if (!entity.id.Equals(snapshot.PrefabName, StringComparison.InvariantCultureIgnoreCase))
-            {
-                Console.WriteLine(
-                    $"Warning: BuildingEntity '{entity.id}' does not have the same ID as its prefab, '{snapshot.PrefabName}'. " +
-                    "Will override its ID with the prefab ID.");
-                entity.id = snapshot.PrefabName;
-            }
+            entity.id = snapshot.PrefabName;
 
             if (string.IsNullOrWhiteSpace(entity.id))
                 continue;

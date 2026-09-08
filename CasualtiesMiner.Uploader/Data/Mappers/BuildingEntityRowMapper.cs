@@ -14,6 +14,7 @@ public class BuildingEntityRowMapper
         return new BuildingEntityRow
         {
             Id = building.id,
+            LocaleId = building.localeId ?? "MISSING",
             SpriteName = building.spriteName ?? "MISSING",
             Health = building.health,
             RequireGround = building.requireGround,

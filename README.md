@@ -1,12 +1,45 @@
 # CasualtiesMiner
 
-A suite of Data Mining tool for [Casualties: Unknown](https://store.steampowered.com/app/4576490/Casualties_Unknown/).
+A suite of data mining tools for [Casualties: Unknown](https://store.steampowered.com/app/4576490/Casualties_Unknown/).
 
-Used for the Wiki project where automation of data dumping is needed
+It is primarily used for automation work on the [Miraheze wiki](https://casualtiesunknown.miraheze.org/) for the game.
+
+# Structure
+
+The suite is split into multiple .NET projects:
+- CasualtiesMiner.Generators, a C# source generator that creates DTOs from game classes and strips them of Unity types
+- CasualtiesMiner.Shared, a C# library holding generated DTOs and code reused between the projects
+- CasualtiesMiner.Dumper, a C# library that dumps data from the game prefabs and the game's .NET assembly
+- CasualtiesMiner.Dumper.Cli, a CLI frontend for the dumper library
+- CasualtiesMiner.Uploader, a CLI application that uploads dumped data to MediaWiki through Bucket tables and Lua data modules 
+
+## CasualtiesMiner.Generators
+
+The source generator creates DTOs (read: C# classes) derived from the game's own MonoBehaviours and types. It strips or
+replaces any Unity specific types (such as `AudioSource`, `Sprite`, etc.), so that the derived type can be used in a
+plain .NET project. This is used to synchronize the properties between the tools and the game and warn of any potential
+breaking changes caused by game updates.
+
+## CasualtiesMiner.Shared
+
+The shared library defines partial classes for the DTOs created by the generator. In addition to the game's own
+properties, the library adds additional ones, implements equality operators, etc.
+
+## CasualtiesMiner.Dumper
+
+The data dumper does two things:
+* Parses .NET IL code from the game's `Assembly-CSharp.dll` and extracts game object properties, such as
+  item stats, moodle effects, tiles, recipes, etc.
+* Extracts prefab information from the game's asset bundles for game objects like items, buildings and entities
+
+Currently, the parsing of data from delegates like `OnUse`, `LimbUse`, etc. is not implemented yet.
 
 ## CasualtiesMiner.Dumper.Cli
 
-The data dumper, analyze the Assembly-CSharp's IL code to give us the game's data, the current limitation is Delegate (as seen in OnUse, LimbUse etc etc), I don't wanna write a complex parser, so I just dump C# code lmao
+The Cli frontend takes a single parameter: the path to `Assembly-CSharp.dll`, or alternatively the game's installation
+directory.
+
+The resulting extracted data is written to `data.json`, next to the CLI executable.
 
 ### Usage
 
@@ -22,33 +55,49 @@ macOS / Linux
 
 ## CasualtiesMiner.Uploader
 
-Uploads the dumped item data to a [Bucket](https://meta.weirdgloop.org/w/Extension:Bucket)-enabled
-MediaWiki (the wiki at `casualtiesunknown.miraheze.org` already has Bucket + Scribunto installed).
+The uploader CLI sends the dumped item data to MediaWiki in the form of 
+[Bucket](https://meta.weirdgloop.org/w/Extension:Bucket) tables and Lua data modules. The wiki must have the Bucket and
+Scribunto extensions installed (which is the case for the [Miraheze wiki](https://casualtiesunknown.miraheze.org)).
 
-### Data model on the wiki
+### Uploaded data
 
-A reference table plus per-category and per-subtype detail tables:
+#### Bucket
 
-- `Bucket:Item` — index of every item with `item_id`, a link to `Item:<id>`, `category`, and stats.
-- `Bucket:Item_<category>` — one bucket per game category (`medical`, `drug`, `food`, `water`,
-  `tool`, `utility`, `container`, `trash`, `custom`, `unobtainable`) holding the full item fields.
-- `Bucket:Item_liquid` / `Bucket:Item_battery` — extra fields for liquid containers and batteries.
+The uploader creates and uploads a Bucket schema for each type of extracted data:
 
-`Module:ItemData` routes language-neutral rows into Bucket. **Localized names and descriptions are not
-stored in Bucket** — they live in `Module:Locale/<LANG>/items` and are resolved at render time.
+- `Bucket:Block` - tile data, like the health, hit sound and sleep quality
+- `Bucket:Bodyfield` - holds info about body timers
+- `Bucket:Building` - building and entity data, like health, items dropped when destroyed, etc.
+- `Bucket:Gamefield` - holds specific constants for gameplay
+- `Bucket:Item` - items, like their value and weight
+- `Bucket:Item_liquid` - extra liquid container data, like the liquid capacity
+- `Bucket:Item_battery` - extra battery data, like max charge
+- `Bucket:Item_container` - extra item container data, like maximum weight and encumbrance reduction
+- `Bucket:Item_gun` - extra gun data, like damage and loudness
+- `Bucket:Item_page` - links an item ID with its page on MediaWiki; this is populated through the wiki
+- `Bucket:Liquid` - liquid data, like color and qualities
+- `Bucket:Moodle` - moodle data, like icon, conditions, and whenever they can be seen by unchipped players
+- `Bucket:Recipe`, `Bucket:Recipe ingridient`, `Bucket:Recipe result` - all item crafting recipes
+
+The uploader also creates a trigger page (like `Project:Item data`) and Lua data module (like `Module:Item/data`)
+for the purpose of inserting the extracted data into the Bucket tables.
 
 ### Localization (i18n)
 
-Game locale files (`Assets/Lang/EN.json`, community translations, etc.) are uploaded as Scribunto modules:
+Game locale files (`CasualtiesUnknown_Data/Lang/EN.json`, community translations, etc.) are uploaded as Scribunto
+modules that are logically grouped under the `Module:Locale` parent module:
 
-- `Module:Locale` — resolves the active language and looks up strings.
-- `Module:Locale/EN/items`, `Module:Locale/RU/items`, … — `{ bandage = { name = "...", description = "..." } }`.
+- `Module:Locale/{lang}/blocks` - tile names
+- `Module:Locale/{lang}/buildings` - building and entity names and descriptions
+- `Module:Locale/{lang}/items` - item names and descriptions
+- `Module:Locale/{lang}/liquids` - liquid names and descriptions
+- `Module:Locale/{lang}/moodles` - mooodle names and descriptions
+- `Module:Locale/{lang}/notes` - in-game survivor notes, indexed by layer
+- `Module:Locale/{lang}/pauseQuotes` - pause menu pause quotes
+- `Module:Locale/{lang}/pdaNotes` - in-game PDA notes
+- `Module:Locale/{lang}/character/{character name}` - trader and player dialogue for characters
 - `Module:Locale/EN/ui`, … — infobox labels and category names.
 - `Module:Locale/WikiUi` — wiki-only labels for moodle cause expressions (`body.*` → readable names).
-
-Item pages can use any title (e.g. `Pump-action shotgun`). The infobox is driven by the item id
-(`{{#invoke:ItemBucket|infobox|shotgun}}`), not the page name. Field labels and descriptions follow
-the wiki content language, or an explicit `|lang=RU` invoke parameter.
 
 Upload all languages from a directory:
 

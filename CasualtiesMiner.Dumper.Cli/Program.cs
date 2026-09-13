@@ -7,17 +7,37 @@ using System.Text.Json;
 
 namespace CasualtiesMiner.Dumper.Cli;
 
-public class Program
+public static class Program
 {
+    private const string DllName = "Assembly-CSharp.dll";
+    
+    private static string? DeduceGameAssemblyPath(string inputPath)
+    {
+        var target = Path.GetFileName(inputPath);
+
+        var assemblyPath = target switch
+        {
+            DllName => inputPath,
+            "Managed" => Path.Combine(inputPath, DllName),
+            "CasualtiesUnknown_Data" => Path.Combine(inputPath, "Managed", DllName),
+            _ => Path.Combine(inputPath, "CasualtiesUnknown_Data", "Managed", DllName)
+        };
+
+        return Path.Exists(assemblyPath) ? assemblyPath : null;
+    }
+    
     public static async Task Main(string[] args)
     {
-        var assemblyPath = args.Length > 0 ? args[0] : "Assembly-CSharp.dll";
-        if (!File.Exists(assemblyPath))
+        var inputPath = args.Length > 0 ? args[0] : "Assembly-CSharp.dll";
+        var assemblyPath = DeduceGameAssemblyPath(inputPath);
+
+        if (assemblyPath == null)
         {
-            Console.WriteLine($"Can't find {assemblyPath}.");
+            Console.WriteLine($"Could not find Assembly-CSharp.dll starting from {inputPath}.");
+            Console.WriteLine($"Pass the path to the game's assembly or its installation directory.");
             return;
         }
-
+        
         ModuleDefinition? module;
         try
         {
@@ -34,6 +54,8 @@ public class Program
             Console.WriteLine("Invalid file! Expecting Assembly-CSharp!");
             return;
         }
+        
+        Console.WriteLine($"Extracting data from {assemblyPath}");
 
         var dumper = new Dumper(module);
 

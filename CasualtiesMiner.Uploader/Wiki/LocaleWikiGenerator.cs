@@ -90,6 +90,48 @@ internal static class LocaleWikiGenerator
             _ => (fallback, fallback),
         };
     }
+
+    public enum Character
+    {
+        Experiment = 0,
+        Milky = 1,
+        Dune = 2
+    }
+    
+    public static string BuildLoreModule(GameLocale locale, Character character)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine(GeneratedHeader);
+        sb.AppendLine("return {");
+
+        foreach (var (layerIndex, layerNotes) in locale.LoreNotes.Index())
+        {
+            foreach (var (noteIndex, note) in layerNotes.Index())
+            {
+                if (!note.TryGetValue("Item1", out var text))
+                    text = "";
+                
+                if (!note.TryGetValue("Item2", out var sprite))
+                    sprite = "";
+                
+                if (!note.TryGetValue("Item3", out var font))
+                    font = "";
+                
+                sb.AppendLine("  {");
+
+                sb.Append("    text = ").Append(LuaFormat.String(text)).AppendLine(",");
+                sb.Append("    sprite = ").Append(LuaFormat.String(sprite)).AppendLine(",");
+                sb.Append("    font = ").Append(LuaFormat.String(font)).AppendLine(",");
+                sb.Append("    layer_index = ").Append(LuaFormat.Int(layerIndex)).AppendLine(",");
+                sb.Append("    note_index = ").Append(LuaFormat.Int(noteIndex)).AppendLine(",");
+                
+                sb.AppendLine("  },");
+            }
+        }
+
+        sb.AppendLine("}");
+        return sb.ToString();
+    }
     
     public static string BuildLoreModule(GameLocale locale)
     {
@@ -141,6 +183,39 @@ internal static class LocaleWikiGenerator
             sb.Append("    text = ").Append(LuaFormat.String(text)).AppendLine(",");
             sb.AppendLine("  },");
         }
+
+        sb.AppendLine("}");
+        return sb.ToString();
+    }
+
+    public static string BuildCharacterModule(GameLocale locale, Character character)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine(GeneratedHeader);
+        sb.AppendLine("return {");
+
+        foreach (var (key, lines) in locale.Characters[(int)character])
+        {
+            sb.Append("  [").Append(LuaFormat.String(key)).AppendLine("] = {");
+
+            foreach (var line in lines)
+                sb.Append("    ").Append(LuaFormat.String(line)).AppendLine(",");
+            
+            sb.AppendLine("  },");
+        }
+
+        sb.AppendLine("}");
+        return sb.ToString();
+    }
+
+    public static string BuildPauseQuotesModule(GameLocale locale)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine(GeneratedHeader);
+        sb.AppendLine("return {");
+
+        foreach (var quote in locale.PauseQuotes)
+            sb.Append("  ").Append(LuaFormat.String(quote)).AppendLine(",");
 
         sb.AppendLine("}");
         return sb.ToString();

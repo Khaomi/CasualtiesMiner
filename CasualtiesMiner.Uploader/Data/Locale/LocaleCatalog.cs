@@ -5,7 +5,7 @@ namespace CasualtiesMiner.Uploader.Data.Locale;
 internal sealed class LocaleCatalog
 {
     public const string DefaultLanguageCode = "EN";
-    public const string DefaultRemoteTag = "f7b5136f96a0509b4dfbd00bafcf208ef2f17fb8";
+    public const string DefaultRemoteTag = "v7.0.1";
 
     private const string RemoteRepo = "orsoniks/scavgame-locale";
 
@@ -231,8 +231,40 @@ internal sealed class LocaleCatalog
         var other = ReadStringDictionary(document.RootElement, "other");
         var moodles = ReadStringDictionary(document.RootElement, "moodles");
         var buildings = ReadStringDictionary(document.RootElement, "buildings");
+        var characters = ReadCharacterNotes(document.RootElement, "character");
         var loreNotes = ReadLoreNotes(document.RootElement, "notes");
         var pda = ReadPda(document.RootElement, "pdaNotes");
+        var pauseQuotes = ReadStringList(document.RootElement, "pauseQuotes");
+        
+        // TODO: Manual changes for survivor notes that were removed at the author's request from 7.0.1 onwards
+        // Remove / change these if needed
+
+        string? item1;
+        bool doSurvivorNoteChanges =
+            loreNotes.Count >= 2 &&
+            loreNotes[0].Count >= 29 &&
+            loreNotes[2].Count >= 2 &&
+            loreNotes[0][17].TryGetValue("Item1", out item1) && item1.StartsWith("i found a weapon. a firearm.") &&
+            loreNotes[0][18].TryGetValue("Item1", out item1) && item1.StartsWith("im so mad at myself for acting") &&
+            loreNotes[0][26].TryGetValue("Item1", out item1) && item1.StartsWith("It's full of all kinds of") &&
+            loreNotes[0][28].TryGetValue("Item1", out item1) && item1.StartsWith("I'm feeling lonely... so I") &&
+            loreNotes[3][1].TryGetValue("Item1", out item1) && item1.StartsWith("i cant anymore. why.");
+
+        if (doSurvivorNoteChanges)
+        {
+            loreNotes[0][17]["Item1"] =
+                "i found some kind of... shooty device. scared the hell out of myself with it... and destroyed whatever that trap was infront of me. not used to operating this thing.";
+            loreNotes[0][18]["Item1"] =
+                "everyone keeps shooing me from their pods. they remember me... from up there. i shouldn't have acted like that. this is terrible.";
+            loreNotes[0].RemoveAt(28);
+            loreNotes[0].RemoveAt(26);
+            loreNotes[3][1]["Item1"] =
+                "its over. goodbye. sorry.";
+        }
+        else
+        {
+            Console.WriteLine("WARNING: Could not apply the survivor note removals!");
+        }
 
         return new GameLocale
         {
@@ -241,10 +273,38 @@ internal sealed class LocaleCatalog
             Main = main,
             Other = other,
             Moodles = moodles,
+            Characters = characters,
             Buildings = buildings,
             LoreNotes = loreNotes,
             PDA = pda,
+            PauseQuotes = pauseQuotes
         };
+    }
+    
+    private static List<string> ReadStringList(JsonElement root, string propertyName)
+    {
+        var result = new List<string>();
+
+        if (!root.TryGetProperty(propertyName, out var element) || element.ValueKind != JsonValueKind.Array)
+        {
+            Console.WriteLine($"Warn: locale property {propertyName} could not be read correctly!");
+            return result;
+        }
+
+        foreach (var (index, entry) in element.EnumerateArray().Index())
+        {
+            string? value = null;
+            
+            if (entry.ValueKind == JsonValueKind.String)
+                value = entry.GetString();
+
+            if (value != null)
+                result.Add(value);
+            else
+                Console.WriteLine($"Warn: locale property {propertyName}.{index} could not be read correctly!");
+        }
+
+        return result;
     }
 
     private static Dictionary<string, string> ReadStringDictionary(JsonElement root, string propertyName)
@@ -268,6 +328,59 @@ internal sealed class LocaleCatalog
                 result[entry.Name] = value;
             else
                 Console.WriteLine($"Warn: locale property {propertyName}.{entry.Name} could not be read correctly!");
+        }
+
+        return result;
+    }
+
+    private static IReadOnlyList<IReadOnlyDictionary<string, IReadOnlyList<string>>> ReadCharacterNotes(JsonElement root, string propertyName)
+    {
+        var result = new List<IReadOnlyDictionary<string, IReadOnlyList<string>>>();
+
+        if (!root.TryGetProperty(propertyName, out var element) || element.ValueKind != JsonValueKind.Array)
+        {
+            Console.WriteLine($"Warn: locale property {propertyName} could not be read correctly!");
+            return result;
+        }
+
+        foreach (var (index, character) in element.EnumerateArray().Index())
+        {
+            var characterResult = new Dictionary<string, IReadOnlyList<string>>();
+            result.Add(characterResult);
+
+            if (character.ValueKind == JsonValueKind.Object)
+            {
+                foreach (var entry in character.EnumerateObject())
+                {
+                    var lines = new List<string>();
+
+                    if (entry.Value.ValueKind == JsonValueKind.Array)
+                    {
+                        foreach (var (lineIndex, lineValue) in entry.Value.EnumerateArray().Index())
+                        {
+                            string? line = null;
+
+                            if (lineValue.ValueKind == JsonValueKind.String)
+                                line = lineValue.GetString();
+                            
+                            if (line != null)
+                                lines.Add(line);
+                            else
+                                Console.WriteLine($"Warn: locale property {propertyName}.{index}.{entry.Name}.{lineIndex} could not be read correctly!");
+                        }
+
+                        characterResult[entry.Name] = lines;
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Warn: locale property {propertyName}.{index}.{entry.Name} could not be read correctly!");
+                    }
+                }
+            }
+            else
+            {
+                Console.WriteLine($"Warn: locale property {propertyName}.{index} could not be read correctly!");
+            }
         }
 
         return result;

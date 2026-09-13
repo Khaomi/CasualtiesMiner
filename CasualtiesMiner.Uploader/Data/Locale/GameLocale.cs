@@ -10,8 +10,10 @@ internal sealed class GameLocale
     public required IReadOnlyDictionary<string, string> Other { get; init; }
     public required IReadOnlyDictionary<string, string> Moodles { get; init; }
     public required IReadOnlyDictionary<string, string> Buildings { get; init; }
+    public required IReadOnlyList<IReadOnlyDictionary<string, IReadOnlyList<string>>> Characters { get; init; }
     public required IReadOnlyList<IReadOnlyList<IDictionary<string, string>>> LoreNotes { get; init; }
-    public required IReadOnlyList<IDictionary<string, string>> PDA { get; init; }
+    public required IReadOnlyList<IReadOnlyDictionary<string, string>> PDA { get; init; }
+    public required IReadOnlyList<string> PauseQuotes { get; init; }
 
 
     public string GetObjectName(string id, string fallback) => Main.GetValueOrDefault(id, fallback);

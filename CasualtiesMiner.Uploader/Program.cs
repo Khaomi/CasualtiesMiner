@@ -114,7 +114,7 @@ public static class Program
         var itemIds = dataRows.Items.Select(r => r.ItemId).ToArray();
         var moodleItems = dataRows.Moodles.Select(r => r.LocaleId).ToArray();
         var blockItems = dataRows.Tiles.Select(r => r.Name).ToArray();
-        var buildingItems = dataRows.BuildingEntities.Select(r => r.Id).ToArray();
+        var buildingItems = dataRows.BuildingEntities.Select(r => r.LocaleId).Distinct().ToArray();
 
         foreach (var locale in locales.Locales)
         {
@@ -137,9 +137,19 @@ public static class Program
             await UploadWikiLocale(client, options, locale, "buildings", LocaleWikiGenerator.BuildLocaleModule(
                 locale,
                 buildingItems.Select(id => LocaleModuleEntry.Create(id, GameObjectType.Building))));
+            
+            await UploadWikiLocale(client, options, locale, "character/experiment",
+                LocaleWikiGenerator.BuildCharacterModule(locale, LocaleWikiGenerator.Character.Experiment));
+            
+            await UploadWikiLocale(client, options, locale, "character/milky",
+                LocaleWikiGenerator.BuildCharacterModule(locale, LocaleWikiGenerator.Character.Milky));
+            
+            await UploadWikiLocale(client, options, locale, "character/dune",
+                LocaleWikiGenerator.BuildCharacterModule(locale, LocaleWikiGenerator.Character.Dune));
 
             await UploadWikiLocale(client, options, locale, "notes", LocaleWikiGenerator.BuildLoreModule(locale));
             await UploadWikiLocale(client, options, locale, "pdaNotes", LocaleWikiGenerator.BuildPdaModule(locale));
+            await UploadWikiLocale(client, options, locale, "pauseQuotes", LocaleWikiGenerator.BuildPauseQuotesModule(locale));
             await UploadWikiLocale(client, options, locale, "ui", LocaleWikiGenerator.BuildUiModule(locale));
         }
     }

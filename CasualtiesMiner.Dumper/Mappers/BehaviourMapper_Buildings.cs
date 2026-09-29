@@ -73,4 +73,17 @@ public static partial class BehaviourMapper
             conditionLossPerShot = baseField["conditionLossPerShot"].AsFloat,
         };
     }
+    
+    public static BatteryItem MapBatteryItem(AssetTypeValueField baseField)
+    {
+        return new BatteryItem()
+        {
+            // maxCharge - runtime use only
+            // batteryType - runtime use only
+            // batteryWasFavourited - runtime use only
+            // maxAllowedCharge - runtime use only
+            preset = (BatteryPreset)baseField["preset"].AsInt,
+            notSpawnWithBattery = baseField["notSpawnWithBattery"].AsBool,
+        };
+    }
 }

@@ -16,6 +16,8 @@ internal sealed class MediaWikiClient : IDisposable
     private readonly TimeSpan _requestDelay;
     private string? _csrfToken;
 
+    private readonly Dictionary<string, string?> _cachedPageHashes = [];
+
     public MediaWikiClient(string apiUrl, TimeSpan? requestDelay = null)
     {
         _apiUrl = apiUrl;
@@ -75,19 +77,13 @@ internal sealed class MediaWikiClient : IDisposable
             text = GetFormattedPage(text);
         
         var localSha1 = ComputeSha1(text);
-        var remoteSha1 = await GetRevisionSha1Async(title);
+        var remoteSha1 = _cachedPageHashes.TryGetValue(title, out var sha) ? sha : (await GetPageHashesAsync([title])).First().Hash;
 
         if (dryRun)
         {
             var sanitizedTitle = Path.GetInvalidFileNameChars().Aggregate(title, (current, ch) => current.Replace(ch, '_'));
             var dryRunPath = Path.Combine(Program.DryRunFolder, sanitizedTitle + ".txt");
             await using var writer = new StreamWriter(File.OpenWrite(dryRunPath));
-            
-            await writer.WriteLineAsync("=== Page ===");
-            await writer.WriteLineAsync(title);
-            await writer.WriteLineAsync("=== Summary ===");
-            await writer.WriteLineAsync(summary);
-            await writer.WriteLineAsync("=== Contents ===");
             await writer.WriteAsync(text);
         }
 
@@ -116,38 +112,82 @@ internal sealed class MediaWikiClient : IDisposable
 
         return document.RootElement.GetProperty("edit").GetProperty("result").GetString() ?? "unknown";
     }
-    
-    private async Task<string?> GetRevisionSha1Async(string title)
+
+    public async Task CachePageHashesAsync(IEnumerable<string> titles)
     {
-        using var response = await PostAsync(new Dictionary<string, string>
+        var pageHashes = await GetPageHashesAsync(titles);
+
+        foreach (var (title, hash) in pageHashes)
+            _cachedPageHashes[title] = hash;
+    }
+    
+    /// <summary>
+    /// Gets a list of revision hashes, one per input page title.
+    /// </summary>
+    /// <param name="titles">Page titles to retrieve hashes for.</param>
+    /// <returns>A list of hashes, one for each title. A null hash is returned if a failure occurs.</returns>
+    private async Task<IEnumerable<(string Title, string? Hash)>> GetPageHashesAsync(IEnumerable<string> titles)
+    {
+        List<(string Title, string? Hash)> hashes = [];
+
+        // "Maximum number of values is 50 (500 for clients that are allowed higher limits)."
+        foreach (var batch in titles.Chunk(50))
         {
-            ["action"] = "query",
-            ["prop"] = "revisions",
-            ["rvprop"] = "sha1",
-            ["rvslots"] = "main",
-            ["titles"] = title,
-            ["formatversion"] = "2",
-            ["format"] = "json"
-        });
+            hashes.AddRange(await GetChunk(batch));
+        }
 
-        using var document = await ReadJsonAsync(response);
-        ThrowIfApiError(document, $"Query SHA1 for '{title}'");
+        return hashes;
+        
+        async Task<IEnumerable<(string Title, string? Hash)>> GetChunk(string[] titlesBatch)
+        {
+            using var response = await PostAsync(new Dictionary<string, string>
+            {
+                ["action"] = "query",
+                ["prop"] = "revisions",
+                ["rvprop"] = "sha1",
+                ["rvslots"] = "main",
+                ["titles"] = string.Join('|', titlesBatch),
+                ["formatversion"] = "2",
+                ["format"] = "json"
+            });
 
-        var pages = document.RootElement.GetProperty("query").GetProperty("pages");
-        if (pages.GetArrayLength() == 0)
-            return null;
+            using var document = await ReadJsonAsync(response);
+            ThrowIfApiError(document, $"Query SHA1 for '{string.Join('|', titlesBatch)}'");
 
-        var page = pages[0];
-        if (page.TryGetProperty("missing", out _))
-            return null;
+            var pages = document.RootElement.GetProperty("query").GetProperty("pages");
+            if (pages.GetArrayLength() != titlesBatch.Length)
+                throw new InvalidOperationException(
+                    $"Query SHA1 for '{string.Join('|', titlesBatch)}' failed: " +
+                    $"expected {titlesBatch.Length} hashes, got {pages.GetArrayLength()} hashes instead.");
 
-        if (!page.TryGetProperty("revisions", out var revisions) || revisions.GetArrayLength() == 0)
-            return null;
+            var titleRemap = new Dictionary<string, string>();
 
-        if (!revisions[0].TryGetProperty("sha1", out var sha1))
-            return null;
+            // Mediawiki returns normalized titles in "pages"
+            // and the relationship between raw and normalized tiles in "normalized"
+            if (document.RootElement.GetProperty("query").TryGetProperty("normalized", out var normalizedTitles))
+            {
+                titleRemap = normalizedTitles.EnumerateArray()
+                    .ToDictionary(
+                        titleChange => titleChange.GetProperty("to").GetString()!,
+                        titleChange => titleChange.GetProperty("from").GetString()!);
+            }
+            
+            return pages.EnumerateArray().Select(page =>
+            {
+                var pageTitle = page.TryGetProperty("title", out var title) ? title.GetString()! : "";
+                
+                if (page.TryGetProperty("missing", out _))
+                    return (pageTitle, null);
 
-        return sha1.GetString();
+                if (!page.TryGetProperty("revisions", out var revisions) || revisions.GetArrayLength() == 0)
+                    return (pageTitle, null);
+
+                if (!revisions[0].TryGetProperty("sha1", out var sha1))
+                    return (pageTitle, null);
+                
+                return (pageTitle, sha1.GetString());
+            }).Select(pair => (titleRemap.GetValueOrDefault(pair.pageTitle, pair.pageTitle), pair.Item2)).ToArray();
+        }
     }
 
     private async Task<string> GetTokenAsync(string type)

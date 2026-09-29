@@ -13,6 +13,7 @@ public readonly record struct PrefabItemSnapshot(
     string PrefabName,
     AssetExternal Container,
     AssetExternal GunScript,
+    AssetExternal BatteryItem,
     string SpriteName
 );
 
@@ -80,6 +81,7 @@ public sealed class AssetsParser : IDisposable
 
             _ = TryFindBehaviour(prefab, "Container", out var container);
             _ = TryFindBehaviour(prefab, "GunScript", out var gunScript);
+            _ = TryFindBehaviour(prefab, "BatteryItem", out var batteryItem);
 
             if (snapshots.ContainsKey(item[0].AsString))
             {
@@ -88,7 +90,13 @@ public sealed class AssetsParser : IDisposable
             }
 
             var spriteName = TryGetSpriteName(prefab, out var name) ? name : string.Empty;
-            snapshots.Add(item[0].AsString, new PrefabItemSnapshot(item[0].AsString, container, gunScript, spriteName));
+            snapshots.Add(item[0].AsString, new PrefabItemSnapshot(
+                item[0].AsString,
+                container,
+                gunScript,
+                batteryItem,
+                spriteName
+                ));
         }
 
         return snapshots.Values;

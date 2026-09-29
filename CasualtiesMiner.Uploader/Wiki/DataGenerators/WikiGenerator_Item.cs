@@ -23,6 +23,9 @@ internal static partial class WikiGenerator
     public static string BuildItemGunModule(IReadOnlyList<ItemRow> rows)
         => BuildTableDataModule(rows.Where(x => x.IsGun), EnumerateGunFields);
 
+    public static string BuildItemBatterySlotModule(IReadOnlyList<ItemRow> rows)
+        => BuildTableDataModule(rows.Where(x => x.HasBatterySlot), EnumerateBatterySlotFields);
+
     private static IEnumerable<(string Key, string Value)> EnumerateItemFields(ItemRow row)
     {
         yield return ("item_id", LuaFormat.String(row.ItemId));
@@ -63,6 +66,9 @@ internal static partial class WikiGenerator
         
         // Indicates that there is info in the gun table
         yield return ("is_gun", LuaFormat.Bool(row.IsGun));
+        
+        // Indicates that there is info in the battery slot table
+        yield return ("has_battery_slot", LuaFormat.Bool(row.HasBatterySlot));
     }
     
     private static IEnumerable<(string Key, string Value)> EnumerateItemBatteryFields(ItemRow row)
@@ -104,5 +110,12 @@ internal static partial class WikiGenerator
         yield return ("shots_per_fire", LuaFormat.Int(row.ShotsPerFire));
         yield return ("vertical_spread", LuaFormat.Num(row.VerticalSpread));
         yield return ("condition_loss_per_shot", LuaFormat.Num(row.ConditionLossPerShot));
+    }
+    
+    private static IEnumerable<(string Key, string Value)> EnumerateBatterySlotFields(ItemRow row)
+    {
+        yield return ("item_id", LuaFormat.String(row.ItemId));
+        yield return ("battery_preset", LuaFormat.String(row.BatteryPreset));
+        yield return ("spawns_with_battery", LuaFormat.Bool(row.SpawnsWithBattery));
     }
 }

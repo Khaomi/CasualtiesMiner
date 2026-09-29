@@ -32,5 +32,6 @@
   "jump_height_mult_change":     { "type": "DOUBLE", "index": false },
   "wearable_visual_offset":      { "type": "INTEGER", "index": false },
   "is_container":                { "type": "BOOLEAN" },
-  "is_gun":                      { "type": "BOOLEAN" }
+  "is_gun":                      { "type": "BOOLEAN" },
+  "has_battery_slot":            { "type": "BOOLEAN" }
 }

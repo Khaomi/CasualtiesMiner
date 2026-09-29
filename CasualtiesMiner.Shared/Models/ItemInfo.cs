@@ -46,8 +46,20 @@ public partial class ItemInfo : IEquatable<ItemInfo>
 {
     public string spriteName;
 
+    /// <summary>
+    /// Item container-related stats for this item.
+    /// </summary>
     public Container? containerData;
+    
+    /// <summary>
+    /// Firearm-related stats for this item.
+    /// </summary>
     public GunScript? gunScriptData;
+    
+    /// <summary>
+    /// Information about the batteries this item uses / can take.
+    /// </summary>
+    public BatteryItem? batteryItemData;
 
     [SetsRequiredMembers]
     public ItemInfo()

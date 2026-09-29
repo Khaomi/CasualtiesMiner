@@ -31,6 +31,7 @@ internal static class ItemRowMapper
 
         var container = item.containerData;
         var gun = item.gunScriptData;
+        var batterySlot = item.batteryItemData;
 
         return new ItemRow
         {
@@ -99,6 +100,10 @@ internal static class ItemRowMapper
             ShotsPerFire = gun?.shotsPerFire ?? 0,
             VerticalSpread = (double)(decimal)(gun?.verticalSpread ?? 0),
             ConditionLossPerShot = (double)(decimal)(gun?.conditionLossPerShot ?? 0),
+            
+            HasBatterySlot = batterySlot != null,
+            BatteryPreset = batterySlot?.preset.ToString() ?? "",
+            SpawnsWithBattery = !(batterySlot?.notSpawnWithBattery ?? false)
         };
     }
 

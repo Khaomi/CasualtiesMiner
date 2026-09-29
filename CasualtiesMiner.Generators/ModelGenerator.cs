@@ -33,6 +33,7 @@ public sealed class ModelGenerator : IIncrementalGenerator
         "RecipeResult",
         "CraftingQuality",
         "BatteryInfo",
+        "BatteryItem",
         "Color",
         "Recognition",
         "SleepQuality",

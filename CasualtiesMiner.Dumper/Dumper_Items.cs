@@ -146,6 +146,11 @@ public sealed partial class Dumper
                     item.gunScriptData = BehaviourMapper.MapGunScript(prefab.GunScript.baseField);
                 }
 
+                if (prefab.BatteryItem.info != null)
+                {
+                    item.batteryItemData = BehaviourMapper.MapBatteryItem(prefab.BatteryItem.baseField);
+                }
+
                 if (string.IsNullOrEmpty(item.spriteName))
                 {
                     Console.WriteLine($"Warning: item '{item.fullName}' has an empty sprite.");
@@ -156,6 +161,7 @@ public sealed partial class Dumper
                 item.spriteName = "";
                 item.containerData = null;
                 item.gunScriptData = null;
+                item.batteryItemData = null;
                 Console.WriteLine($"Warning: No prefab was found for item '{item.fullName}'.");
             }
             

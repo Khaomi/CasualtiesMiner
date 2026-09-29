@@ -79,4 +79,9 @@ internal sealed record ItemRow
     public int ShotsPerFire { get; init; }
     public double VerticalSpread { get; init; }
     public double ConditionLossPerShot { get; init; }
+    
+    // Battery slot data
+    public bool HasBatterySlot { get; init; }
+    public string BatteryPreset { get; init; } = string.Empty;
+    public bool SpawnsWithBattery { get; init; } // Note - inverted from the notSpawnWithBattery condition
 }

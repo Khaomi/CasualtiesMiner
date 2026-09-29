@@ -13,6 +13,13 @@ public static class Program
 {
     public static readonly string DryRunFolder = Path.Combine("dry-run-output");
 
+    public record EditRequest(
+        string Title,
+        string Contents,
+        string EditMessage,
+        string? ForceUploadIfPageChanged = null,
+        string? Group = null);
+
     public static async Task<int> Main(string[] args)
     {
         if (args.Length == 0 || args[0] is "-h" or "--help" or "help")
@@ -66,49 +73,72 @@ public static class Program
             Console.WriteLine("Dry run: no edits will be performed.");
         }
 
+        List<EditRequest> edits = [];
+
         if (mode is "schemas" or "all")
         {
-            await UploadSchemasAsync(client, options);
+            edits.AddRange(UploadSchemasAsync());
         }
 
         if (mode is "locales" or "all")
         {
-            await UploadLocalesAsync(client, locales, dataRows, options);
+            edits.AddRange(UploadLocalesAsync(locales, dataRows));
         }
 
         if (mode is "bulk" or "all")
         {
-            await UploadBulkAsync(client, dataRows, options);
+            edits.AddRange(UploadBulkAsync(dataRows));
+        }
+
+        if (edits.Count > 0)
+        {
+            Console.WriteLine($"Fetching page hashes ({edits.Count} total)...");
+            await client.CachePageHashesAsync(edits.Select(x => x.Title));
+        }
+
+        Dictionary<string, string> statuses = [];
+
+        foreach (var group in edits.GroupBy(x => x.Group))
+        {
+            Console.WriteLine($"== Uploading {group.Key ?? "misc"} pages ==");
+            var preferredLogWidth = group.Max(x => x.Title.Length);
+            foreach (var edit in group)
+            {
+                var forceUpload =
+                    edit.ForceUploadIfPageChanged != null &&
+                    statuses.TryGetValue(edit.ForceUploadIfPageChanged, out var dependentStatus) &&
+                    dependentStatus != MediaWikiClient.NoChange;
+                var status = statuses[edit.Title] = await client.EditAsync(
+                    edit.Title,
+                    edit.Contents,
+                    edit.EditMessage,
+                    options.DryRun,
+                    forceUpload: forceUpload);
+                Console.WriteLine($"  {edit.Title.PadRight(preferredLogWidth, ' ')} {status}{(forceUpload ? " (force upload)" : "")}");
+            }
         }
 
         Console.WriteLine("Done.");
         return 0;
     }
 
-    private static async Task UploadSchemasAsync(MediaWikiClient client, CliOptions options)
+    private static IEnumerable<EditRequest> UploadSchemasAsync()
     {
-        Console.WriteLine("== Uploading Bucket schemas ==");
-
         foreach (var (bucket, schema) in BucketSchemas.All())
         {
             var title = "Bucket:" + bucket;
-            var status = await client.EditAsync(title, schema, "Update Bucket schema", options.DryRun);
-            Console.WriteLine($"  {title}: {status}");
+            yield return new EditRequest(title, schema, "Update Bucket schema", Group: "Bucket schema");
         }
     }
 
-    private static async Task UploadLocalesAsync(
-        MediaWikiClient client,
+    private static IEnumerable<EditRequest> UploadLocalesAsync(
         LocaleCatalog locales,
-        DataRows dataRows,
-        CliOptions options)
+        DataRows dataRows)
     {
-        Console.WriteLine("== Uploading locale modules ==");
-
         if (locales.Locales.Count == 0)
         {
             Console.WriteLine("  Warning: no locale files found; skipping Module:Locale/<lang>/*.");
-            return;
+            return [];
         }
 
         var itemIds = dataRows.Items.Select(r => r.ItemId).ToArray();
@@ -116,55 +146,51 @@ public static class Program
         var blockItems = dataRows.Tiles.Select(r => r.Name).ToArray();
         var buildingItems = dataRows.BuildingEntities.Select(r => r.LocaleId).Distinct().ToArray();
 
+        var allItems = Enumerable.Empty<EditRequest>();
+
         foreach (var locale in locales.Locales)
         {
-            await UploadWikiLocale(client, options, locale, "items", LocaleWikiGenerator.BuildLocaleModule(
-                locale,
-                itemIds.Select(id => LocaleModuleEntry.Create(id, GameObjectType.Item))));
-
-            await UploadWikiLocale(client, options, locale, "liquids", LocaleWikiGenerator.BuildLocaleModule(
-                locale,
-                dataRows.Liquids.Select(LocaleModuleEntry.CreateFromLiquid)));
-
-            await UploadWikiLocale(client, options, locale, "blocks", LocaleWikiGenerator.BuildLocaleModule(
-                locale,
-                blockItems.Select(id => LocaleModuleEntry.Create(id, GameObjectType.Block))));
-            
-            await UploadWikiLocale(client, options, locale, "moodles", LocaleWikiGenerator.BuildLocaleModule(
-                locale,
-                moodleItems.Select(id => LocaleModuleEntry.Create(id, GameObjectType.Moodle))));
-
-            await UploadWikiLocale(client, options, locale, "buildings", LocaleWikiGenerator.BuildLocaleModule(
-                locale,
-                buildingItems.Select(id => LocaleModuleEntry.Create(id, GameObjectType.Building))));
-            
-            await UploadWikiLocale(client, options, locale, "character/experiment",
-                LocaleWikiGenerator.BuildCharacterModule(locale, LocaleWikiGenerator.Character.Experiment));
-            
-            await UploadWikiLocale(client, options, locale, "character/milky",
-                LocaleWikiGenerator.BuildCharacterModule(locale, LocaleWikiGenerator.Character.Milky));
-            
-            await UploadWikiLocale(client, options, locale, "character/dune",
-                LocaleWikiGenerator.BuildCharacterModule(locale, LocaleWikiGenerator.Character.Dune));
-
-            await UploadWikiLocale(client, options, locale, "notes", LocaleWikiGenerator.BuildLoreModule(locale));
-            await UploadWikiLocale(client, options, locale, "pdaNotes", LocaleWikiGenerator.BuildPdaModule(locale));
-            await UploadWikiLocale(client, options, locale, "pauseQuotes", LocaleWikiGenerator.BuildPauseQuotesModule(locale));
-            await UploadWikiLocale(client, options, locale, "ui", LocaleWikiGenerator.BuildUiModule(locale));
+            allItems = allItems
+                .Concat(UploadWikiLocale(locale, "items", LocaleWikiGenerator.BuildLocaleModule(
+                    locale,
+                    itemIds.Select(id => LocaleModuleEntry.Create(id, GameObjectType.Item)))))
+                .Concat(UploadWikiLocale(locale, "liquids", LocaleWikiGenerator.BuildLocaleModule(
+                    locale,
+                    dataRows.Liquids.Select(LocaleModuleEntry.CreateFromLiquid))))
+                .Concat(UploadWikiLocale(locale, "blocks", LocaleWikiGenerator.BuildLocaleModule(
+                    locale,
+                    blockItems.Select(id => LocaleModuleEntry.Create(id, GameObjectType.Block)))))
+                .Concat(UploadWikiLocale(locale, "moodles", LocaleWikiGenerator.BuildLocaleModule(
+                    locale,
+                    moodleItems.Select(id => LocaleModuleEntry.Create(id, GameObjectType.Moodle)))))
+                .Concat(UploadWikiLocale(locale, "buildings", LocaleWikiGenerator.BuildLocaleModule(
+                    locale,
+                    buildingItems.Select(id => LocaleModuleEntry.Create(id, GameObjectType.Building)))))
+                .Concat(UploadWikiLocale(locale, "character/experiment",
+                    LocaleWikiGenerator.BuildCharacterModule(locale, LocaleWikiGenerator.Character.Experiment)))
+                .Concat(UploadWikiLocale(locale, "character/milky",
+                    LocaleWikiGenerator.BuildCharacterModule(locale, LocaleWikiGenerator.Character.Milky)))
+                .Concat(UploadWikiLocale(locale, "character/dune",
+                    LocaleWikiGenerator.BuildCharacterModule(locale, LocaleWikiGenerator.Character.Dune)))
+                .Concat(UploadWikiLocale(locale, "notes", LocaleWikiGenerator.BuildLoreModule(locale)))
+                .Concat(UploadWikiLocale(locale, "pdaNotes",
+                    LocaleWikiGenerator.BuildPdaModule(locale)))
+                .Concat(UploadWikiLocale(locale, "pauseQuotes",
+                    LocaleWikiGenerator.BuildPauseQuotesModule(locale)))
+                .Concat(UploadWikiLocale(locale, "ui", LocaleWikiGenerator.BuildUiModule(locale)));
         }
+
+        return allItems;
     }
 
-    private static async Task UploadBulkAsync(
-        MediaWikiClient client,
-        DataRows dataRows,
-        CliOptions options)
+    private static IEnumerable<EditRequest> UploadBulkAsync(
+        DataRows dataRows)
     {
-        Console.WriteLine("== Uploading bulk Bucket data ==");
-
         List<(string ModuleName, string TargetBucket, string ModuleData)> wikiContents =
         [
             ("Item", "Item", WikiGenerator.BuildItemDataModule(dataRows.Items)),
             ("ItemBattery", "Item_battery", WikiGenerator.BuildItemBatteryDataModule(dataRows.Items)),
+            ("ItemBatterySlot", "Item_battery_slot", WikiGenerator.BuildItemBatterySlotModule(dataRows.Items)),
             ("ItemLiquid", "Item_liquid", WikiGenerator.BuildItemLiquidDataModule(dataRows.Items)),
             ("ItemContainer", "Item_container", WikiGenerator.BuildItemContainerModule(dataRows.Items)),
             ("ItemGun", "Item_gun", WikiGenerator.BuildItemGunModule(dataRows.Items)),
@@ -176,37 +202,26 @@ public static class Program
             ("Moodle", "Moodle", WikiGenerator.BuildMoodleDataModule(dataRows.Moodles)),
             ("Building", "Building", WikiGenerator.BuildBuildingDataModule(dataRows.BuildingEntities)),
             ("GameField", "Gamefield", WikiGenerator.BuildGameFieldDataModule(dataRows.GameFields)),
-            ("BodyField", "Bodyfield", WikiGenerator.BuildBodyFieldDataModule(dataRows.BodyFields))
+            ("BodyField", "Bodyfield", WikiGenerator.BuildBodyFieldDataModule(dataRows.BodyFields)),
         ];
 
         foreach (var (moduleName, targetBucket, moduleData) in wikiContents)
         {
-            await UploadWikiContent(
-                client, options,
-                moduleName, targetBucket,
-                moduleData);
+            foreach (var item in UploadWikiContent(moduleName, targetBucket, moduleData))
+                yield return item;
         }
     }
 
-    private static async Task UploadWikiLocale(
-        MediaWikiClient client, 
-        CliOptions options,
+    private static IEnumerable<EditRequest> UploadWikiLocale(
         GameLocale locale,
         string suffix,
         string localeModuleContents)
     {
         var uiTitle = LocaleWikiGenerator.ModuleTitle(locale.Code, suffix);
-        var uiStatus = await client.EditAsync(
-            uiTitle,
-            localeModuleContents,
-            $"Update {locale.Code} strings for {suffix}",
-            options.DryRun);
-        Console.WriteLine($"  {uiTitle}: {uiStatus}");
+        yield return new EditRequest(uiTitle, localeModuleContents, $"Update {locale.Code} strings for {suffix}", Group: "Locale");
     }
 
-    private static async Task UploadWikiContent(
-        MediaWikiClient client,
-        CliOptions options,
+    private static IEnumerable<EditRequest> UploadWikiContent(
         string moduleBaseName,
         string targetBucket,
         string dataModuleContents)
@@ -214,30 +229,24 @@ public static class Program
         var dataModuleTitle = WikiContent.MakeDataModuleTitle(moduleBaseName);
         var triggerPageTitle = WikiContent.MakeTriggerPageTitle(moduleBaseName);
 
-        var data = await client.EditAsync(
+        yield return new EditRequest(
             dataModuleTitle,
             dataModuleContents,
-            $"Regenerate {moduleBaseName} module data",
-            options.DryRun);
-        Console.WriteLine($"  {dataModuleTitle}: {data}");
+            $"Regenerate {moduleBaseName} module data", Group: "Bucket data");
 
-        bool shouldUploadTrigger = data != MediaWikiClient.NoChange;
-        
-        var trigger = await client.EditAsync(
+        yield return new EditRequest(
             triggerPageTitle,
             WikiContent.MakeTriggerPage(dataModuleTitle, targetBucket),
             $"Refresh {moduleBaseName} Bucket data",
-            options.DryRun,
-            forceUpload: shouldUploadTrigger);
-        Console.WriteLine($"  {triggerPageTitle}: {trigger}");
+            ForceUploadIfPageChanged: dataModuleTitle, Group: "Bucket data");
     }
 
     private static async Task<DataRows> LoadDumpedData(CliOptions options)
     {
         var data = await File.ReadAllTextAsync(options.DataPath);
-        
+
         var dataJson = JsonSerializer.Deserialize<DumpedData>(data, DumpedData.SerializationOptions)!;
-        
+
         return new DataRows
         {
             Items = dataJson.Items
@@ -361,7 +370,9 @@ public static class Program
                 LocalePath = Get("--locale") ?? "EN.json",
                 DefaultLocale = Get("--default-locale") ?? LocaleCatalog.DefaultLanguageCode,
                 LocaleTag = Get("--locale-tag") ?? LocaleCatalog.DefaultRemoteTag,
-                RequestDelay = int.TryParse(delayRaw, out var delayMs) ? TimeSpan.FromMilliseconds(delayMs) : TimeSpan.FromMilliseconds(750),
+                RequestDelay = int.TryParse(delayRaw, out var delayMs)
+                    ? TimeSpan.FromMilliseconds(delayMs)
+                    : TimeSpan.FromMilliseconds(750),
                 DryRun = args.Contains("--dry-run")
             };
         }

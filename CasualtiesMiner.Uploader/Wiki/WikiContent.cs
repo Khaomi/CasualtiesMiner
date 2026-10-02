@@ -13,10 +13,12 @@ internal static class WikiContent
 
     public static string MakeTriggerPage(string moduleName, string targetBucket) =>
         """
-        This page stores data from "{moduleName}" into "{targetBucket}" [[Extension:Bucket|Bucket]] in a single batch.
+        This page stores data from "{moduleName}" into "{targetBucket}" [https://meta.weirdgloop.org/w/Extension:Bucket Bucket] in a single batch.
         It is generated automatically; do not edit by hand.
         
         {{#invoke:BucketInsert|main|{moduleName}|{targetBucket}}}
+        
+        {{Bucket templates and modules navbox}}
         """
             .Replace("{moduleName}", moduleName)
             .Replace("{targetBucket}", targetBucket);

@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <OutputType>Library</OutputType>
+        <RootNamespace>CasualtiesMiner.Uploader</RootNamespace>
+    </PropertyGroup>
+
+    <Import Project="../CasualtiesMiner.Common.props" />
+
+    <ItemGroup>
+        <ProjectReference Include="..\CasualtiesMiner.Shared\CasualtiesMiner.Shared.csproj" />
+    </ItemGroup>
+    
+    <ItemGroup>
+        <EmbeddedResource Include="BucketSchemas/*.json" 
+                          LogicalName="BucketSchemas/%(Filename)%(Extension)"/>
+    </ItemGroup>
+    
+    <ItemGroup>
+      <Folder Include="Properties\" />
+    </ItemGroup>
+</Project>

@@ -1,0 +1,5 @@
+{
+  "item_id":             { "type": "TEXT" },
+  "battery_preset":      { "type": "TEXT" },
+  "spawns_with_battery": { "type": "BOOLEAN" }
+}

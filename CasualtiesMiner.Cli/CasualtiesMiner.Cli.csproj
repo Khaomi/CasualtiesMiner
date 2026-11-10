@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+    </PropertyGroup>
+
+    <Import Project="../CasualtiesMiner.Common.props" />
+
+    <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+        <PublishAot>true</PublishAot>
+        <TrimMode>partial</TrimMode>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\CasualtiesMiner.Dumper\CasualtiesMiner.Dumper.csproj" />
+        <ProjectReference Include="..\CasualtiesMiner.Uploader\CasualtiesMiner.Uploader.csproj" />
+    </ItemGroup>
+
+    <!-- Copy ze files -->
+    <ItemGroup>
+        <None Include="..\libs\Assembly-CSharp.dll" CopyToOutputDirectory="PreserveNewest" Condition="Exists('..\libs\Assembly-CSharp.dll')" />
+    </ItemGroup>
+    <ItemGroup>
+      <PackageReference Include="AssetsTools.NET" Version="3.0.4" />
+      <PackageReference Include="AssetsTools.NET.MonoCecil" Version="3.0.4" />
+    </ItemGroup>
+</Project>

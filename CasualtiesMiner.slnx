@@ -4,7 +4,15 @@
         <Platform Name="x64"/>
         <Platform Name="x86"/>
     </Configurations>
-    <Project Path="CasualtiesMiner.Shared/CasualtiesMiner.Shared.csproj"/>
-    <Project Path="CasualtiesMiner.Dumper/CasualtiesMiner.Dumper.csproj"/>
-    <Project Path="CasualtiesMiner.Dumper.Cli/CasualtiesMiner.Dumper.Cli.csproj"/>
+    <Folder Name="/Solution Files/">
+        <File Path=".gitignore"/>
+        <File Path="CasualtiesMiner.Common.props"/>
+        <File Path="LICENSE"/>
+        <File Path="README.md"/>
+    </Folder>
+    <Project Path="CasualtiesMiner.Dumper/CasualtiesMiner.Dumper.csproj" />
+    <Project Path="CasualtiesMiner.Generators/CasualtiesMiner.Generators.csproj" />
+    <Project Path="CasualtiesMiner.Shared/CasualtiesMiner.Shared.csproj" />
+    <Project Path="CasualtiesMiner.Uploader/CasualtiesMiner.Uploader.csproj" />
+    <Project Path="CasualtiesMiner.Cli/CasualtiesMiner.Cli.csproj" />
 </Solution>

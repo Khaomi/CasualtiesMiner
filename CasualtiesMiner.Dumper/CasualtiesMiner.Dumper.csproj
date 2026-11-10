@@ -1,12 +1,19 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-    <Import Project="../CasualtiesMiner.Common.props"/>
+    <Import Project="../CasualtiesMiner.Common.props" />
 
     <ItemGroup>
-        <ProjectReference Include="..\CasualtiesMiner.Shared\CasualtiesMiner.Shared.csproj"/>
+        <ProjectReference Include="..\CasualtiesMiner.Shared\CasualtiesMiner.Shared.csproj" />
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="ICSharpCode.Decompiler" Version="10.0.1.8346"/>
-        <PackageReference Include="Mono.Cecil" Version="0.11.6"/>
+        <PackageReference Include="AssetsTools.NET" Version="3.0.4" />
+        <PackageReference Include="AssetsTools.NET.MonoCecil" Version="3.0.4" />
+        <PackageReference Include="AssetsTools.NET.Texture" Version="3.0.2" />
+        <PackageReference Include="ICSharpCode.Decompiler" Version="10.0.1.8346" />
+        <PackageReference Include="Mono.Cecil" Version="0.11.6" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <EmbeddedResource Include="Assets\lz4.tpk" />
     </ItemGroup>
 </Project>

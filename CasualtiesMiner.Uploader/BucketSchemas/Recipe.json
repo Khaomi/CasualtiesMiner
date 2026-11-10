@@ -1,0 +1,7 @@
+{
+  "recipe_id":         { "type": "TEXT" },
+  "int":               { "type": "INTEGER" },
+  "category":          { "type": "TEXT", "index": false },
+  "is_repair":         { "type": "BOOLEAN" },
+  "index":             { "type": "INTEGER" }
+}

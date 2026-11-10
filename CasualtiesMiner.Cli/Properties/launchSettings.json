@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "CasualtiesMiner.Cli - Dump data": {
+      "commandName": "Project",
+      "commandLineArgs": "extract \"/home/asslex/.local/share/Steam/steamapps/common/Casualties Unknown Demo/\""
+    },
+    "CasualtiesMiner.Cli - Upload": {
+      "commandName": "Project",
+      "commandLineArgs": "upload all --dry-run --assembly-path \"/home/alex/.local/share/Steam/steamapps/common/Casualties Unknown Demo/\""
+    }
+  }
+}

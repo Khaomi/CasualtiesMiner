@@ -1,0 +1,9 @@
+{
+  "body_field_id":              { "type": "TEXT" },
+  "label":                      { "type": "TEXT", "index": false },
+  "kind":                       { "type": "TEXT" },
+  "heal_speed_field_id":        { "type": "TEXT", "index": false },
+  "max_timer_field_id":         { "type": "TEXT", "index": false },
+  "intensity_scale_field_id":   { "type": "TEXT", "index": false },
+  "splint_multiplier_field_id": { "type": "TEXT", "index": false }
+}

@@ -1,0 +1,313 @@
+using System.Net;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+
+namespace CasualtiesMiner.Uploader.MediaWiki;
+
+internal sealed class MediaWikiClient : IDisposable
+{
+    public const string NoChange = "nochange";
+    public const string DryRun = "dry-run";
+    private static readonly TimeSpan DefaultTimeout = TimeSpan.FromMinutes(5);
+
+    private readonly string _apiUrl;
+    private readonly HttpClient _client;
+    private readonly TimeSpan _requestDelay;
+    private string? _csrfToken;
+
+    private readonly Dictionary<string, string?> _cachedPageHashes = [];
+
+    public MediaWikiClient(string apiUrl, TimeSpan? requestDelay = null)
+    {
+        _apiUrl = apiUrl;
+        _requestDelay = requestDelay ?? TimeSpan.FromMilliseconds(750);
+
+        var handler = new SocketsHttpHandler
+        {
+            CookieContainer = new CookieContainer(),
+            UseCookies = true,
+            AutomaticDecompression = DecompressionMethods.All,
+            PooledConnectionLifetime = TimeSpan.FromMinutes(10)
+        };
+
+        _client = new HttpClient(handler)
+        {
+            Timeout = DefaultTimeout
+        };
+
+        _client.DefaultRequestHeaders.UserAgent.ParseAdd("CasualtiesMinerUploader/1.0 (wiki data sync bot)");
+    }
+
+    public async Task LoginAsync(string user, string password)
+    {
+        var loginToken = await GetTokenAsync("login");
+
+        using var response = await PostAsync(new Dictionary<string, string>
+        {
+            ["action"] = "login",
+            ["lgname"] = user,
+            ["lgpassword"] = password,
+            ["lgtoken"] = loginToken,
+            ["format"] = "json"
+        });
+
+        using var document = await ReadJsonAsync(response);
+        var login = document.RootElement.GetProperty("login");
+        var result = login.GetProperty("result").GetString();
+
+        if (!string.Equals(result, "Success", StringComparison.Ordinal))
+        {
+            var reason = login.TryGetProperty("reason", out var r) ? r.GetString() : result;
+            throw new InvalidOperationException($"Login failed: {reason}");
+        }
+
+        _csrfToken = await GetTokenAsync("csrf");
+    }
+
+    /// <summary>
+    /// Creates or replaces a page. Skips the write when the revision SHA1 already matches.
+    /// Returns the resulting edit status (<c>"nochange"</c>, <c>"Success"</c>, or <c>"dry-run"</c>).
+    /// </summary>
+    public async Task<string> EditAsync(string title, string text, string summary, string? dryRunFolder = null, bool forceUpload = false)
+    {
+        if (title.StartsWith("Bucket:"))
+            text = GetFormattedBucketSchema(text);
+        else
+            text = GetFormattedPage(text);
+        
+        var localSha1 = ComputeSha1(text);
+        var remoteSha1 = _cachedPageHashes.TryGetValue(title, out var sha) ? sha : (await GetPageHashesAsync([title])).First().Hash;
+
+        if (dryRunFolder != null)
+        {
+            var sanitizedTitle = Path.GetInvalidFileNameChars().Aggregate(title, (current, ch) => current.Replace(ch, '_'));
+            var dryRunPath = Path.Combine(dryRunFolder, sanitizedTitle + ".txt");
+            await using var writer = new StreamWriter(File.OpenWrite(dryRunPath));
+            await writer.WriteAsync(text);
+        }
+
+        if (string.Equals(localSha1, remoteSha1, StringComparison.OrdinalIgnoreCase) && !forceUpload)
+            return NoChange;
+        
+        if (dryRunFolder != null)
+            return DryRun;
+
+        if (_csrfToken is null)
+            throw new InvalidOperationException("Not logged in: call LoginAsync first.");
+
+        using var response = await PostAsync(new Dictionary<string, string>
+        {
+            ["action"] = "edit",
+            ["title"] = title,
+            ["text"] = text,
+            ["summary"] = summary,
+            ["bot"] = "1",
+            ["token"] = _csrfToken,
+            ["format"] = "json"
+        });
+
+        using var document = await ReadJsonAsync(response);
+        ThrowIfApiError(document, $"Edit of '{title}'");
+
+        return document.RootElement.GetProperty("edit").GetProperty("result").GetString() ?? "unknown";
+    }
+
+    public async Task CachePageHashesAsync(IEnumerable<string> titles)
+    {
+        var pageHashes = await GetPageHashesAsync(titles);
+
+        foreach (var (title, hash) in pageHashes)
+            _cachedPageHashes[title] = hash;
+    }
+    
+    /// <summary>
+    /// Gets a list of revision hashes, one per input page title.
+    /// </summary>
+    /// <param name="titles">Page titles to retrieve hashes for.</param>
+    /// <returns>A list of hashes, one for each title. A null hash is returned if a failure occurs.</returns>
+    private async Task<IEnumerable<(string Title, string? Hash)>> GetPageHashesAsync(IEnumerable<string> titles)
+    {
+        List<(string Title, string? Hash)> hashes = [];
+
+        // "Maximum number of values is 50 (500 for clients that are allowed higher limits)."
+        foreach (var batch in titles.Chunk(50))
+        {
+            hashes.AddRange(await GetChunk(batch));
+        }
+
+        return hashes;
+        
+        async Task<IEnumerable<(string Title, string? Hash)>> GetChunk(string[] titlesBatch)
+        {
+            using var response = await PostAsync(new Dictionary<string, string>
+            {
+                ["action"] = "query",
+                ["prop"] = "revisions",
+                ["rvprop"] = "sha1",
+                ["rvslots"] = "main",
+                ["titles"] = string.Join('|', titlesBatch),
+                ["formatversion"] = "2",
+                ["format"] = "json"
+            });
+
+            using var document = await ReadJsonAsync(response);
+            ThrowIfApiError(document, $"Query SHA1 for '{string.Join('|', titlesBatch)}'");
+
+            var pages = document.RootElement.GetProperty("query").GetProperty("pages");
+            if (pages.GetArrayLength() != titlesBatch.Length)
+                throw new InvalidOperationException(
+                    $"Query SHA1 for '{string.Join('|', titlesBatch)}' failed: " +
+                    $"expected {titlesBatch.Length} hashes, got {pages.GetArrayLength()} hashes instead.");
+
+            var titleRemap = new Dictionary<string, string>();
+
+            // Mediawiki returns normalized titles in "pages"
+            // and the relationship between raw and normalized tiles in "normalized"
+            if (document.RootElement.GetProperty("query").TryGetProperty("normalized", out var normalizedTitles))
+            {
+                titleRemap = normalizedTitles.EnumerateArray()
+                    .ToDictionary(
+                        titleChange => titleChange.GetProperty("to").GetString()!,
+                        titleChange => titleChange.GetProperty("from").GetString()!);
+            }
+            
+            return pages.EnumerateArray().Select(page =>
+            {
+                var pageTitle = page.TryGetProperty("title", out var title) ? title.GetString()! : "";
+                
+                if (page.TryGetProperty("missing", out _))
+                    return (pageTitle, null);
+
+                if (!page.TryGetProperty("revisions", out var revisions) || revisions.GetArrayLength() == 0)
+                    return (pageTitle, null);
+
+                if (!revisions[0].TryGetProperty("sha1", out var sha1))
+                    return (pageTitle, null);
+                
+                return (pageTitle, sha1.GetString());
+            }).Select(pair => (titleRemap.GetValueOrDefault(pair.pageTitle, pair.pageTitle), pair.Item2)).ToArray();
+        }
+    }
+
+    private async Task<string> GetTokenAsync(string type)
+    {
+        using var response = await PostAsync(new Dictionary<string, string>
+        {
+            ["action"] = "query",
+            ["meta"] = "tokens",
+            ["type"] = type,
+            ["format"] = "json"
+        });
+
+        using var document = await ReadJsonAsync(response);
+        ThrowIfApiError(document, $"Obtain '{type}' token");
+
+        var tokens = document.RootElement.GetProperty("query").GetProperty("tokens");
+        return tokens.GetProperty(type + "token").GetString()
+               ?? throw new InvalidOperationException($"Could not obtain '{type}' token.");
+    }
+
+    private async Task<HttpResponseMessage> PostAsync(Dictionary<string, string> parameters)
+    {
+        const int maxAttempts = 5;
+        Exception? lastException = null;
+
+        for (var attempt = 1; attempt <= maxAttempts; attempt++)
+        {
+            try
+            {
+                using var content = new FormUrlEncodedContent(parameters);
+                var response = await _client.PostAsync(_apiUrl, content);
+
+                if (IsTransientStatusCode(response.StatusCode) && attempt < maxAttempts)
+                {
+                    response.Dispose();
+                    await DelayBeforeRetryAsync(attempt);
+                    continue;
+                }
+
+                if (_requestDelay > TimeSpan.Zero)
+                    await Task.Delay(_requestDelay);
+
+                return response;
+            }
+            catch (Exception ex) when (IsTransient(ex) && attempt < maxAttempts)
+            {
+                lastException = ex;
+                Console.Error.WriteLine($"  API request failed (attempt {attempt}/{maxAttempts}): {ex.Message}");
+                await DelayBeforeRetryAsync(attempt);
+            }
+        }
+
+        throw lastException ?? new InvalidOperationException("API request failed after all retry attempts.");
+    }
+
+    private static async Task DelayBeforeRetryAsync(int attempt)
+    {
+        var delay = TimeSpan.FromSeconds(Math.Pow(2, attempt));
+        Console.Error.WriteLine($"  Retrying in {delay.TotalSeconds:0}s ...");
+        await Task.Delay(delay);
+    }
+
+    private static bool IsTransientStatusCode(HttpStatusCode statusCode)
+    {
+        return statusCode is HttpStatusCode.RequestTimeout
+            or HttpStatusCode.TooManyRequests
+            or HttpStatusCode.BadGateway
+            or HttpStatusCode.ServiceUnavailable
+            or HttpStatusCode.GatewayTimeout;
+    }
+
+    private static bool IsTransient(Exception ex)
+    {
+        return ex is HttpRequestException or TaskCanceledException or IOException;
+    }
+
+    private static async Task<JsonDocument> ReadJsonAsync(HttpResponseMessage response)
+    {
+        response.EnsureSuccessStatusCode();
+        await using var stream = await response.Content.ReadAsStreamAsync();
+        return await JsonDocument.ParseAsync(stream);
+    }
+
+    private static void ThrowIfApiError(JsonDocument document, string context)
+    {
+        if (!document.RootElement.TryGetProperty("error", out var error))
+            return;
+
+        var code = error.TryGetProperty("code", out var c) ? c.GetString() : "unknown";
+        var info = error.TryGetProperty("info", out var i) ? i.GetString() : "unknown error";
+        throw new InvalidOperationException($"{context} failed: {code} — {info}");
+    }
+
+    private static string ComputeSha1(string text)
+    {
+        var hash = SHA1.HashData(Encoding.UTF8.GetBytes(text));
+        return Convert.ToHexString(hash).ToLowerInvariant();
+    }
+    
+    private static string GetFormattedPage(string schema)
+    {
+        // Ignores whitespace at the end
+        return schema.TrimEnd();
+    }
+
+    private static string GetFormattedBucketSchema(string schema)
+    {
+        var options = new JsonSerializerOptions()
+        {
+            WriteIndented = true,
+            IndentCharacter = '\t',
+            IndentSize = 1,
+        };
+
+        // Ignores whitespace around the text
+        return JsonSerializer.Serialize(JsonSerializer.Deserialize<JsonDocument>(schema), options).Trim();
+    }
+
+    public void Dispose()
+    {
+        _client.Dispose();
+    }
+}

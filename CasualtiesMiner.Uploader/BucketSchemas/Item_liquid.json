@@ -1,0 +1,6 @@
+{
+  "item_id":          { "type": "TEXT" },
+  "capacity":         { "type": "DOUBLE" },
+  "auto_fill":        { "type": "BOOLEAN" },
+  "default_contents": { "type": "TEXT", "repeated": true }
+}

@@ -1,3 +1,24 @@
 <Project Sdk="Microsoft.NET.Sdk">
     <Import Project="../CasualtiesMiner.Common.props"/>
+
+    <ItemGroup>
+        <ProjectReference Include="..\CasualtiesMiner.Generators\CasualtiesMiner.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    </ItemGroup>
+
+    <!-- Unity assemblies: metadata-only refs for source generator (compilation.References) -->
+    <ItemGroup Condition="Exists('..\libs\Assembly-CSharp.dll')">
+        <Reference Include="Assembly-CSharp">
+            <HintPath>..\libs\Assembly-CSharp.dll</HintPath>
+            <Private>false</Private>
+        </Reference>
+        <Reference Include="UnityEngine.CoreModule">
+            <HintPath>..\libs\UnityEngine.CoreModule.dll</HintPath>
+            <Private>false</Private>
+        </Reference>
+    </ItemGroup>
+
+    <ItemGroup Condition="!Exists('..\libs\Assembly-CSharp.dll')">
+        <!-- This needs to be private because otherwise projects will reference the Gamelibs themselves instead of the source-generated doubles -->
+        <PackageReference Include="CasualtiesUnknown.GameLibs.Steam" Version="7.0.1-ngd.0" PrivateAssets="All"/>
+    </ItemGroup>
 </Project>

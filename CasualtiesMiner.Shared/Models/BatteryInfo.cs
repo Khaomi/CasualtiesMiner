@@ -1,11 +1,9 @@
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
 
 namespace CasualtiesMiner.Shared.Models;
 
-public class BatteryInfo : ItemInfo, IEquatable<BatteryInfo>
+public sealed partial class BatteryInfo : ItemInfo, IEquatable<BatteryInfo>
 {
-    public required float maxCharge;
-
     [SetsRequiredMembers]
     public BatteryInfo()
     {

@@ -2,11 +2,8 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace CasualtiesMiner.Shared.Models;
 
-public sealed class LiquidStack : IEquatable<LiquidStack>
+public sealed partial class LiquidStack : IEquatable<LiquidStack>
 {
-    public required float amount;
-    public required string liquidId;
-
     public bool Equals(LiquidStack? other)
     {
         if (other is null) return false;
@@ -37,12 +34,8 @@ public sealed class LiquidStack : IEquatable<LiquidStack>
     }
 }
 
-public class LiquidItemInfo : ItemInfo, IEquatable<LiquidItemInfo>
+public sealed partial class LiquidItemInfo : ItemInfo, IEquatable<LiquidItemInfo>
 {
-    public required bool autoFill = true;
-    public required float capacity;
-    public required List<LiquidStack> defaultContents;
-
     [SetsRequiredMembers]
     public LiquidItemInfo()
     {

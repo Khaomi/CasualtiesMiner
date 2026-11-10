@@ -1,15 +1,7 @@
-namespace CasualtiesMiner.Shared.Models;
+﻿namespace CasualtiesMiner.Shared.Models;
 
-public sealed class RecipeItem : IEquatable<RecipeItem>
+public sealed partial class RecipeItem : IEquatable<RecipeItem>
 {
-    public bool destroyItem = true;
-    public required string ignoredId;
-    public bool isLiquid;
-    public float minimumCondition = 0.9f;
-    public required CraftingQuality quality;
-    public bool specific;
-    public required string specificId;
-
     public bool Equals(RecipeItem? other)
     {
         if (other is null) return false;
@@ -46,14 +38,8 @@ public sealed class RecipeItem : IEquatable<RecipeItem>
     }
 }
 
-public sealed class RecipeResult : IEquatable<RecipeResult>
+public sealed partial class RecipeResult : IEquatable<RecipeResult>
 {
-    public int amount = 1;
-    public bool dontDrainResultLiquid;
-    public required string id;
-    public bool isLiquid;
-    public float resultCondition = 1f;
-
     public bool Equals(RecipeResult? other)
     {
         if (other is null) return false;
@@ -88,20 +74,9 @@ public sealed class RecipeResult : IEquatable<RecipeResult>
     }
 }
 
-public sealed class RecipeInfo : IEquatable<RecipeInfo>
+public sealed partial class Recipe : IEquatable<Recipe>
 {
-    public int category;
-
-    // Game specific field, we don't use this as data
-    // public bool hasMadeBefore;
-    public int index;
-    public int INT;
-    public bool isRepair;
-    public required List<RecipeItem> items;
-    public required RecipeResult result;
-    public bool specialKnown;
-
-    public bool Equals(RecipeInfo? other)
+    public bool Equals(Recipe? other)
     {
         if (other is null) return false;
         if (ReferenceEquals(this, other)) return true;
@@ -123,7 +98,7 @@ public sealed class RecipeInfo : IEquatable<RecipeInfo>
 
     public override bool Equals(object? obj)
     {
-        return Equals(obj as RecipeInfo);
+        return Equals(obj as Recipe);
     }
 
     public override int GetHashCode()
@@ -151,13 +126,13 @@ public sealed class RecipeInfo : IEquatable<RecipeInfo>
         return hash.ToHashCode();
     }
 
-    public static bool operator ==(RecipeInfo? left, RecipeInfo? right)
+    public static bool operator ==(Recipe? left, Recipe? right)
     {
         if (left is null) return right is null;
         return left.Equals(right);
     }
 
-    public static bool operator !=(RecipeInfo? left, RecipeInfo? right)
+    public static bool operator !=(Recipe? left, Recipe? right)
     {
         return !(left == right);
     }

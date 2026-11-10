@@ -4,6 +4,26 @@ A suite of data mining tools for [Casualties: Unknown](https://store.steampowere
 
 It is primarily used for automation work on the [Miraheze wiki](https://casualtiesunknown.miraheze.org/) for the game.
 
+# Installation
+
+You can go to [here](https://github.com/Khaomi/CasualtiesMiner/actions), and click on the latest action to download the latest build for your platform.
+
+# Building
+
+You can easily build the project by running
+```sh
+dotnet publish
+```
+
+> [!TIP]
+> `-c Release` for production
+> nothing for development
+
+The result binary file should be in
+```
+CasualtiesMiner.Cli/bin/${config}/net10.0/${platform}/native/
+```
+
 # Structure
 
 The suite is split into multiple .NET projects:

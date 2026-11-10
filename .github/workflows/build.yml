@@ -32,7 +32,7 @@ jobs:
         run: dotnet publish -c Release -r ${{ matrix.rid }}
 
       - name: Upload CasualtiesMiner.Cli
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: CasualtiesMiner.Cli-${{ matrix.os }}
           path: |

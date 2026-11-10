@@ -6,7 +6,7 @@ It is primarily used for automation work on the [Miraheze wiki](https://casualti
 
 # Installation
 
-You can go to [here](https://github.com/Khaomi/CasualtiesMiner/actions), and click on the latest action to download the latest build for your platform.
+You can go to [here](https://github.com/Khaomi/CasualtiesMiner/actions?query=workflow%3ABuild%20is%3Asuccess), and click on the latest action to download the latest build for your platform.
 
 # Building
 

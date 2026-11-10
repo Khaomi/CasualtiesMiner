@@ -7,8 +7,15 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     strategy:
+      fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            rid: linux-x64
+          - os: windows-latest
+            rid: win-x64
+          - os: macos-latest
+            rid: osx-arm64
 
     steps:
       - uses: actions/checkout@v7
@@ -21,12 +28,15 @@ jobs:
       - name: Install dependencies
         run: dotnet restore
 
+      - name: Restore
+        run: dotnet restore -r ${{ matrix.rid }}
+
       - name: Build
-        run: dotnet publish --no-restore -c Release
+        run: dotnet publish --no-restore -c Release -r ${{ matrix.rid }}
 
       - name: Upload CasualtiesMiner.Cli
         uses: actions/upload-artifact@v4
         with:
           name: CasualtiesMiner.Cli-${{ matrix.os }}
           path: |
-            CasualtiesMiner.Cli/bin/Release/**/**/publish/**/*
+            CasualtiesMiner.Cli/bin/Release/**/${{ matrix.rid }}/publish/**/*

@@ -25,7 +25,7 @@ public static partial class BehaviourMapper
             fullName = baseField["fullName"].AsString, // Requires locale text
             description = baseField["fullName"].AsString, // Requires locale text
             itemsDropOnDestroy = baseField["itemsDropOnDestroy.Array"].Select(MapItemDrop).ToArray(),
-            health = baseField["health"].AsFloat,
+            health = baseField["_health"].IsDummy ? baseField["health"].AsFloat : baseField["_health"].AsFloat,
             requireGround = baseField["requireGround"].AsBool,
             skipDescriptionSet = baseField["skipDescriptionSet"].AsBool,
             dropChanceMultiplier = baseField["dropChanceMultiplier"].AsFloat,

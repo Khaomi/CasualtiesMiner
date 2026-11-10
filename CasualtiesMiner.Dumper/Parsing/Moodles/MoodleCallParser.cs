@@ -68,8 +68,9 @@ internal static class MoodleCallParser
             return null;
         }
 
-        // get `locale desc` (may continue with .Replace(...))
-        if (!TryParseLocaleKey(frame, ref cursor, getMoodleMethod, callIndexInFrame, skipSuffix: true, out var descLocaleKey))
+        // get `locale desc` (may continue with .Replace(...), or pick between two keys with a ternary)
+        if (!TryParseLocaleKey(frame, ref cursor, getMoodleMethod, callIndexInFrame, skipSuffix: true, out var descLocaleKey)
+            && !TryParseLocaleKeyTernary(frame, ref cursor, getMoodleMethod, callIndexInFrame, localeId + "dsc", out descLocaleKey))
         {
             return null;
         }
@@ -142,6 +143,69 @@ internal static class MoodleCallParser
             }
         }
 
+        return true;
+    }
+
+    // Handles `cond ? Locale.GetMoodle("a") : Locale.GetMoodle("b")`, as used by "FOCUSED" moodle
+    private static bool TryParseLocaleKeyTernary(
+        Collection<Instruction> instructions,
+        ref int cursor,
+        MethodReference getMoodleMethod,
+        int callIndex,
+        string preferredKey,
+        out string localeKey)
+    {
+        localeKey = "";
+
+        var branchIndex = -1;
+        for (var i = cursor; i < callIndex; i++)
+        {
+            if (instructions[i].OpCode.Code == Code.Ldstr)
+                return false;
+
+            if (instructions[i].OpCode.FlowControl == FlowControl.Cond_Branch)
+            {
+                branchIndex = i;
+                break;
+            }
+        }
+
+        if (branchIndex < 0 || instructions[branchIndex].Operand is not Instruction trueLabel)
+            return false;
+
+        var falseCursor = branchIndex + 1;
+        if (!TryReadGetMoodleKey(instructions, ref falseCursor, getMoodleMethod, out var whenFalse)
+            || falseCursor >= callIndex
+            || instructions[falseCursor].OpCode.Code is not (Code.Br or Code.Br_S)
+            || instructions[falseCursor].Operand is not Instruction mergeLabel)
+            return false;
+
+        var trueCursor = ILParserHelper.IndexOf(instructions, trueLabel);
+        if (trueCursor < 0
+            || !TryReadGetMoodleKey(instructions, ref trueCursor, getMoodleMethod, out var whenTrue)
+            || trueCursor != ILParserHelper.IndexOf(instructions, mergeLabel))
+            return false;
+
+        localeKey = whenTrue == preferredKey ? whenTrue : whenFalse;
+        cursor = trueCursor;
+        return true;
+    }
+
+    private static bool TryReadGetMoodleKey(
+        Collection<Instruction> instructions,
+        ref int cursor,
+        MethodReference getMoodleMethod,
+        out string key)
+    {
+        key = "";
+
+        if (cursor + 1 >= instructions.Count
+            || instructions[cursor].OpCode.Code != Code.Ldstr
+            || !IsGetMoodleCall(instructions[cursor + 1], getMoodleMethod))
+            return false;
+
+        key = (string)instructions[cursor].Operand!;
+        cursor += 2;
         return true;
     }
 

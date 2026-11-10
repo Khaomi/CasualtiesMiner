@@ -31,7 +31,7 @@ public class UploadCommand : Program.Command
                                        If present, it is used to generate data.json.
               --locale-dir <path>      Folder with game locale JSON (only files with a "main" object).
               --locale <path>          Single locale file (e.g. ru-RU.json); if omitted, only EN is fetched remotely.
-              --locale-tag <git-ref>   Git ref for orsoniks/scavgame-locale (default: v6.1; "6.1" → v6.1).
+              --locale-tag <git-ref>   Git ref for orsoniks/scavgame-locale (default: v1.0; "1.0" → v1.0).
                                        GitHub overrides local only for the same file name (ru-RU.json).
               --default-locale <code>  Locale id = JSON stem (default: EN → EN.json).
               --request-delay-ms <n>   Pause after each API call (default: 750).
@@ -82,7 +82,7 @@ public class UploadCommand : Program.Command
             LocaleDir = kvArgs.GetValueOrDefault("locale-dir"),
             LocalePath = kvArgs.GetValueOrDefault("locale", "EN.json"),
             DefaultLocale = kvArgs.GetValueOrDefault("default-locale", "EN"),
-            LocaleTag = kvArgs.GetValueOrDefault("locale-tag", "v7.0.1"),
+            LocaleTag = kvArgs.GetValueOrDefault("locale-tag", "v1.0"),
             RequestDelay = TimeSpan.FromMilliseconds(delayMs),
             DryRun = flags.Contains("dry-run"),
             DryRunOutput = kvArgs.GetValueOrDefault("dry-run-output", "dry-run-output"),

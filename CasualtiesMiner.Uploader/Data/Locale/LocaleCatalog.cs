@@ -5,9 +5,10 @@ namespace CasualtiesMiner.Uploader.Data.Locale;
 internal sealed class LocaleCatalog
 {
     public const string DefaultLanguageCode = "EN";
-    public const string DefaultRemoteTag = "v7.0.1";
+    public const string DefaultRemoteTag = "v1.0";
 
     private const string RemoteRepo = "orsoniks/scavgame-locale";
+    private static readonly string[] RemoteFolders = ["release/", ""];
 
     public static LocaleCatalog Empty { get; } = new([], DefaultLanguageCode);
 
@@ -133,11 +134,20 @@ internal sealed class LocaleCatalog
         {
             try
             {
-                var url = $"https://raw.githubusercontent.com/{RemoteRepo}/{remoteTag}/{fileName}";
-                var response = await httpClient.GetAsync(url, cancellationToken);
-                if (!response.IsSuccessStatusCode)
+                // Repo keeps release and demo files separate now
+                string? url = null;
+                HttpResponseMessage? response = null;
+                foreach (var folder in RemoteFolders)
                 {
-                    Console.WriteLine($"Warning: {fileName} not on GitHub ref '{remoteTag}' ({(int)response.StatusCode}).");
+                    url = $"https://raw.githubusercontent.com/{RemoteRepo}/{remoteTag}/{folder}{fileName}";
+                    response = await httpClient.GetAsync(url, cancellationToken);
+                    if (response.IsSuccessStatusCode)
+                        break;
+                }
+
+                if (response is not { IsSuccessStatusCode: true })
+                {
+                    Console.WriteLine($"Warning: {fileName} not on GitHub ref '{remoteTag}' ({(int?)response?.StatusCode}).");
                     continue;
                 }
 
@@ -234,7 +244,7 @@ internal sealed class LocaleCatalog
         var characters = ReadCharacterNotes(document.RootElement, "character");
         var loreNotes = ReadLoreNotes(document.RootElement, "notes");
         var pda = ReadPda(document.RootElement, "pdaNotes");
-        var pauseQuotes = ReadStringList(document.RootElement, "pauseQuotes");
+        var pauseQuotes = ReadPauseQuotes(document.RootElement, "pauseQuotes");
         
         // TODO: Manual changes for survivor notes that were removed at the author's request from 7.0.1 onwards
         // Remove / change these if needed
@@ -281,6 +291,46 @@ internal sealed class LocaleCatalog
         };
     }
     
+    // Dict by 'situation'
+    private static IReadOnlyDictionary<string, IReadOnlyList<string>> ReadPauseQuotes(JsonElement root, string propertyName)
+    {
+        var result = new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
+
+        if (!root.TryGetProperty(propertyName, out var element))
+        {
+            Console.WriteLine($"Warn: locale property {propertyName} could not be read correctly!");
+            return result;
+        }
+
+        if (element.ValueKind == JsonValueKind.Array)
+        {
+            result["normal"] = ReadStringList(root, propertyName);
+            return result;
+        }
+
+        if (element.ValueKind != JsonValueKind.Object)
+        {
+            Console.WriteLine($"Warn: locale property {propertyName} could not be read correctly!");
+            return result;
+        }
+
+        foreach (var category in element.EnumerateObject())
+        {
+            if (category.Value.ValueKind != JsonValueKind.Array)
+            {
+                Console.WriteLine($"Warn: locale property {propertyName}.{category.Name} could not be read correctly!");
+                continue;
+            }
+
+            result[category.Name] = category.Value.EnumerateArray()
+                .Where(x => x.ValueKind == JsonValueKind.String)
+                .Select(x => x.GetString()!)
+                .ToList();
+        }
+
+        return result;
+    }
+
     private static List<string> ReadStringList(JsonElement root, string propertyName)
     {
         var result = new List<string>();

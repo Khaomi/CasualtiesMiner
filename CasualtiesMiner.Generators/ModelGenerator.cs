@@ -192,6 +192,20 @@ public sealed class ModelGenerator : IIncrementalGenerator
             .Where(f => f.DeclaredAccessibility == Accessibility.Public || IsStringArray(f.Type));
     }
 
+    private static IEnumerable<IPropertySymbol> GetFieldLikeProperties(INamedTypeSymbol type, IReadOnlyCollection<IFieldSymbol> fields)
+    {
+        var fieldNames = new HashSet<string>(fields.Select(f => f.Name));
+
+        return type.GetMembers()
+            .OfType<IPropertySymbol>()
+            .Where(p => !p.IsStatic && !p.IsIndexer)
+            .Where(p => p.DeclaredAccessibility == Accessibility.Public
+                        && p.GetMethod?.DeclaredAccessibility == Accessibility.Public
+                        && p.SetMethod?.DeclaredAccessibility == Accessibility.Public)
+            .Where(p => p.Type.SpecialType != SpecialType.None)
+            .Where(p => !fieldNames.Contains(p.Name));
+    }
+
     private static bool IsStringArray(ITypeSymbol type)
     {
         return type is IArrayTypeSymbol arrayType
@@ -270,6 +284,15 @@ public sealed class ModelGenerator : IIncrementalGenerator
         sb.AppendLine();
         sb.Append("public partial class ").AppendLine(type.Name);
         sb.AppendLine("{");
+
+        foreach (var property in GetFieldLikeProperties(type, fields))
+        {
+            sb.Append("    public ")
+                .Append(MapFieldType(property.Type))
+                .Append(' ')
+                .Append(property.Name)
+                .AppendLine(";");
+        }
 
         foreach (var field in fields)
         {

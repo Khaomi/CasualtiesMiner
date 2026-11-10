@@ -214,8 +214,15 @@ internal static class LocaleWikiGenerator
         sb.AppendLine(GeneratedHeader);
         sb.AppendLine("return {");
 
-        foreach (var quote in locale.PauseQuotes)
-            sb.Append("  ").Append(LuaFormat.String(quote)).AppendLine(",");
+        foreach (var (category, quotes) in locale.PauseQuotes)
+        {
+            sb.Append("  [").Append(LuaFormat.String(category)).AppendLine("] = {");
+
+            foreach (var quote in quotes)
+                sb.Append("    ").Append(LuaFormat.String(quote)).AppendLine(",");
+
+            sb.AppendLine("  },");
+        }
 
         sb.AppendLine("}");
         return sb.ToString();

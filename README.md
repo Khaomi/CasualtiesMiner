@@ -16,8 +16,7 @@ dotnet publish
 ```
 
 > [!TIP]
-> `-c Release` for production
-> nothing for development
+> Add `-c Release` for production build
 
 The result binary file should be in
 ```

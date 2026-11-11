@@ -76,6 +76,8 @@ public sealed partial class RecipeResult : IEquatable<RecipeResult>
 
 public sealed partial class Recipe : IEquatable<Recipe>
 {
+    public int? DuplicateIndex;
+    
     public bool Equals(Recipe? other)
     {
         if (other is null) return false;

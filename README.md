@@ -128,7 +128,7 @@ beforehand.
 
 Preview without editing (no login needed):
 ```sh
-./CasualtiesMiner.Cli upload all --dry-run --data data.json --assembly-path path/to/assembly
+./CasualtiesMiner.Cli upload all --dry-run --assembly-path path/to/assembly
 ```
 
 Upload data to Mediawiki (bot credentials via Special:BotPasswords):
@@ -138,7 +138,7 @@ Upload data to Mediawiki (bot credentials via Special:BotPasswords):
 
 Use an existing data file instead of the game assembly:
 ```sh
-./CasualtiesMiner.Cli upload all --data path/to/data.json --dry-run --data data.json --assembly-path path/to/assembly
+./CasualtiesMiner.Cli upload all --data path/to/data.json --dry-run --data data.json
 ```
 
 Credentials may also be provided via the `CU_WIKI_USER` / `CU_WIKI_PASSWORD` environment variables.

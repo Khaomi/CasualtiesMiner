@@ -227,6 +227,21 @@ public static class WikiUpload
 
         var dataJson = JsonSerializer.Deserialize<DumpedData>(data, DumpedData.SerializationOptions)!;
 
+        var recipeDuplicates = dataJson.Recipes
+            .Where(m => !string.IsNullOrWhiteSpace(m.result.id))
+            .GroupBy(m => RecipeRowMapper.GetRecipeId(m));
+
+        foreach (var group in recipeDuplicates)
+        {
+            if (group.Count() <= 1)
+                continue;
+            
+            foreach (var (index, recipe) in group.Index())
+            {
+                recipe.DuplicateIndex = index;
+            }
+        }
+
         return new DataRows
         {
             Items = dataJson.Items
@@ -256,7 +271,7 @@ public static class WikiUpload
                 .ToList(),
             Recipes = dataJson.Recipes
                 .Where(m => !string.IsNullOrWhiteSpace(m.result.id))
-                .Select(RecipeRowMapper.Map)
+                .Select(m => RecipeRowMapper.Map(m))
                 .OrderBy(row => row.RecipeId, StringComparer.Ordinal)
                 .ToList(),
             Moodles = dataJson.Moodles

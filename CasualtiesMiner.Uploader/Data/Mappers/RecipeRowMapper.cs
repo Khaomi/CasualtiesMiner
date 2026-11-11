@@ -9,18 +9,26 @@ internal static class RecipeRowMapper
     private static readonly string[] Categories =
         ["materials", "tools", "medicine", "utilities", "food"];
 
+    public static string GetRecipeId(Recipe recipe)
+    {
+        var recipeId = recipe.isRepair
+            ? string.Concat("repaired", recipe.result.id)
+            : recipe.result.id;
+        recipeId = recipe.result.isLiquid
+            ? string.Concat(recipeId, "liquid")
+            : recipeId;
+
+        if (recipe.DuplicateIndex != null)
+            recipeId += $"_{recipe.DuplicateIndex}";
+
+        return recipeId;
+    }
+
     public static RecipeRow Map(Recipe recipe)
     {
-        var recipeItem = recipe.isRepair
-                ? string.Concat("repaired", recipe.result.id)
-                : recipe.result.id;
-        recipeItem = recipe.result.isLiquid
-                ? string.Concat(recipeItem, "liquid")
-                : recipeItem;
-
         return new RecipeRow
         {
-            RecipeId = recipeItem,
+            RecipeId = GetRecipeId(recipe),
             Items = recipe.items,
             Result = recipe.result,
             Category = NormalizeCategory(recipe.category),

@@ -10,20 +10,13 @@ internal static class RecipeItemRowMapper
 {
     public static RecipeItemRow[] Map(Recipe recipe)
     {
-        var recipeItem = recipe.isRepair
-                ? string.Concat("repaired", recipe.result.id)
-                : recipe.result.id;
-        recipeItem = recipe.result.isLiquid
-                ? string.Concat(recipeItem, "liquid")
-                : recipeItem;
-
         var itemsList = new List<RecipeItemRow>();
 
         foreach (var item in recipe.items)
         {
             itemsList.Add(new()
             {
-                RecipeId = recipeItem,
+                RecipeId = RecipeRowMapper.GetRecipeId(recipe),
                 SpecificId = string.IsNullOrEmpty(item.specificId) ? "" : item.specificId,
                 IgnoredId = recipe.isRepair ? "" : recipe.result.id,
                 Quality = item.quality is null ? [] : MapQualities([item.quality]),

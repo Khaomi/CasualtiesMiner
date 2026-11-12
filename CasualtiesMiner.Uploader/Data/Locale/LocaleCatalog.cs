@@ -5,7 +5,7 @@ namespace CasualtiesMiner.Uploader.Data.Locale;
 internal sealed class LocaleCatalog
 {
     public const string DefaultLanguageCode = "EN";
-    public const string DefaultRemoteTag = "v1.0";
+    public const string DefaultRemoteTag = "v1.0.1";
 
     private const string RemoteRepo = "orsoniks/scavgame-locale";
     private static readonly string[] RemoteFolders = ["release/", ""];

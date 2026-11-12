@@ -82,7 +82,7 @@ public class UploadCommand : Program.Command
             LocaleDir = kvArgs.GetValueOrDefault("locale-dir"),
             LocalePath = kvArgs.GetValueOrDefault("locale", "EN.json"),
             DefaultLocale = kvArgs.GetValueOrDefault("default-locale", "EN"),
-            LocaleTag = kvArgs.GetValueOrDefault("locale-tag", "v1.0"),
+            LocaleTag = kvArgs.GetValueOrDefault("locale-tag", "v1.0.1"),
             RequestDelay = TimeSpan.FromMilliseconds(delayMs),
             DryRun = flags.Contains("dry-run"),
             DryRunOutput = kvArgs.GetValueOrDefault("dry-run-output", "dry-run-output"),

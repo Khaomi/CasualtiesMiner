@@ -92,7 +92,7 @@ public static class WikiUpload
                 var status = statuses[edit.Title] = await client.EditAsync(
                     edit.Title,
                     edit.Contents,
-                    edit.EditMessage,
+                    $"{edit.EditMessage} (v{dataRows.GameVersion})",
                     options.DryRun ? options.DryRunOutput : null,
                     forceUpload: forceUpload);
                 Console.WriteLine($"  {edit.Title.PadRight(preferredLogWidth, ' ')} {status}{(forceUpload ? " (force upload)" : "")}");
@@ -244,6 +244,7 @@ public static class WikiUpload
 
         return new DataRows
         {
+            GameVersion = dataJson.GameVersion ?? "Unknown",
             Items = dataJson.Items
                 .Where(item => !string.IsNullOrWhiteSpace(item.fullName))
                 .Select(ItemRowMapper.Map)

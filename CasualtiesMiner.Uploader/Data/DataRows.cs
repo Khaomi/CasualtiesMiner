@@ -4,6 +4,7 @@ namespace CasualtiesMiner.Uploader.Data;
 
 internal class DataRows
 {
+    public required string GameVersion { get; set; }
     public required List<ItemRow> Items { get; set; }
     public required List<LiquidRow> Liquids { get; set; }
     public required List<BlockRow> Tiles { get; set; }

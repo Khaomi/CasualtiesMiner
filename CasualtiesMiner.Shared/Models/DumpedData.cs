@@ -7,6 +7,7 @@ namespace CasualtiesMiner.Shared.Models;
 
 public sealed partial class DumpedData
 {
+    public string GameVersion { get; set; } = "Unknown";
     public ItemInfo[] Items { get; set; } = [];
     public Recipe[] Recipes { get; set; } = [];
     public LiquidType[] Liquids { get; set; } = [];

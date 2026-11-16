@@ -128,6 +128,7 @@ public sealed partial class Dumper
 
         return new DumpedData
         {
+            GameVersion = assets.GameVersion,
             Items = items,
             Recipes = recipes,
             Liquids = liquids,

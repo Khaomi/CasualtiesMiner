@@ -21,6 +21,17 @@ public sealed class AssetsParser : IDisposable
 {
     public string GamePath { get; }
     public AssetsManager Manager { get; private set; }
+    public string GameVersion
+    {
+        get
+        {
+            if (field != null)
+                return field;
+            
+            var playerSettingsRoot = Manager.GetBaseField(GlobalGameManagers, PlayerSettings);
+            return field = playerSettingsRoot["bundleVersion"].AsString;
+        }
+    }
     
     public AssetsParser(string gameDataPath)
     {
@@ -133,6 +144,9 @@ public sealed class AssetsParser : IDisposable
 
     private AssetFileInfo ResourcesManager =>
         field ??= GlobalGameManagers.file.GetAssetsOfType(AssetClassID.ResourceManager)[0];
+
+    private AssetFileInfo PlayerSettings =>
+        field ??= GlobalGameManagers.file.GetAssetsOfType(AssetClassID.PlayerSettings)[0];
 
     private List<AssetTypeValueField> ResourceManagerItems
     {
